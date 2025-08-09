@@ -1,0 +1,112 @@
+<a href="https://egydynamic.com/" target="_blank" class="system-link">
+  <img src="egyd-logo.jpg" alt="dynamic pro logo" class="logo" />
+  <span class="system-title">dynamic <span class="pro">pro</span></span>
+</a>
+<div class="statement-container">
+  <!-- Loading State -->
+  <div *ngIf="loading" class="loading-container">
+    <p-progressSpinner 
+      styleClass="w-4rem h-4rem" 
+      strokeWidth="4" 
+      fill="var(--surface-ground)" 
+      animationDuration=".5s">
+    </p-progressSpinner>
+    <p class="mt-3 text-lg">جاري تحميل البيانات...</p>
+    <p class="mt-2 text-sm opacity-75">إذا استمر التحميل، اضغط الزر أدناه</p>
+    <p-button 
+      label="تحميل البيانات اليدوي"
+      icon="pi pi-refresh"
+      styleClass="mt-3"
+      (onClick)="loadManualData()">
+    </p-button>
+  </div>
+
+  <!-- Error State -->
+  <div *ngIf="error" class="error-container">
+    <p-message 
+      severity="error" 
+      [text]="errorMessage"
+      styleClass="w-full">
+    </p-message>
+  </div>
+
+  <!-- Statement Content -->
+  <div *ngIf="!loading && !error && statement" class="statement-content">
+    <!-- Header Card -->
+    <p-card styleClass="header-card">
+      <div class="header-content">
+        <div class="client-info">
+          <h1 class="client-name">{{ statement.clientName }}</h1>
+          <p class="client-subtitle">كشف الحساب</p>
+        </div>
+        <div class="balance-info">
+          <div class="balance-amount">
+            <span class="amount">{{ statement.currentBalance | number:'1.2-2' }}</span>
+            <span class="currency">{{ statement.currency }}</span>
+          </div>
+          <p class="balance-label">الرصيد الحالي</p>
+        </div>
+      </div>
+    </p-card>
+
+    <!-- Action Card -->
+    <p-card styleClass="action-card">
+      <div class="action-content">
+        <div class="button-group">
+          <p-button 
+            label="عرض كشف الحساب الكامل"
+            icon="pi pi-file-text"
+            size="large"
+            styleClass="full-statement-btn"
+            (onClick)="viewFullStatement()">
+          </p-button>
+          
+          <p-button 
+            label="تحديث البيانات"
+            icon="pi pi-refresh"
+            size="large"
+            styleClass="refresh-btn"
+            (onClick)="refreshData()">
+          </p-button>
+        </div>
+      </div>
+    </p-card>
+
+    <!-- Additional Info Card -->
+    <p-card *ngIf="statement.lastTransactionDate" styleClass="info-card">
+      <div class="info-content">
+        <div class="info-item">
+          <i class="pi pi-calendar info-icon"></i>
+          <div class="info-text">
+            <span class="info-label">آخر معاملة:</span>
+            <span class="info-value">{{ statement.lastTransactionDate | date:'dd/MM/yyyy' }}</span>
+          </div>
+        </div>
+        
+        <div class="info-item" *ngIf="statement.accountNumber">
+          <i class="pi pi-credit-card info-icon"></i>
+          <div class="info-text">
+            <span class="info-label">رقم الحساب:</span>
+            <span class="info-value">{{ statement.accountNumber }}</span>
+          </div>
+        </div>
+        
+        <div class="info-item" *ngIf="statement.accountType">
+          <i class="pi pi-briefcase info-icon"></i>
+          <div class="info-text">
+            <span class="info-label">نوع الحساب:</span>
+            <span class="info-value">{{ statement.accountType }}</span>
+          </div>
+        </div>
+        
+        <div class="info-item" *ngIf="statement.status">
+          <i class="pi pi-check-circle info-icon" [class.status-active]="statement.status === 'نشط'"></i>
+          <div class="info-text">
+            <span class="info-label">حالة الحساب:</span>
+            <span class="info-value" [class.status-active]="statement.status === 'نشط'">{{ statement.status }}</span>
+          </div>
+        </div>
+      </div>
+    </p-card>
+  </div>
+</div> 
