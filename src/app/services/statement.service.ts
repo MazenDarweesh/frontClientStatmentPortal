@@ -1,67 +1,79 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { HttpClient } from '@angular/common/http';
+import { Observable, map } from 'rxjs';
 
-export interface ClientStatement {
+// Models
+export interface ClientAccountStatementDto {
   clientName: string;
-  currentBalance: number;
-  currency: string;
+  accountNumber: string;
+  balance: number;
+  currency?: string;
   lastTransactionDate?: string;
-  accountNumber?: string;
-  accountType?: string;
   status?: string;
 }
 
-@Injectable({
-  providedIn: 'root'
-})
+export interface SupplierAccountStatementDto {
+  supplierName: string;
+  vatNumber: string;
+  balance: number;
+  currency?: string;
+  lastTransactionDate?: string;
+  status?: string;
+}
+
+export interface AccountTransactionDto {
+  type: string;
+  amount: number;
+  currency: string;
+  date: string;
+  notes: string;
+  status: string;
+}
+
+export interface ApiResponse<T> {
+  success: boolean;
+  data: T;
+  message?: string;
+  errorCode?: string;
+}
+
+@Injectable({ providedIn: 'root' })
 export class StatementService {
-  private apiUrl = 'https://api.example.com/statement'; // Mock URL - سيتم تغييره لاحقاً
+  private readonly baseUrl = 'https://localhost:7293/api/';
 
-  constructor(private http: HttpClient) { }
+  constructor(private http: HttpClient) {}
 
-  getClientStatement(token: string): Observable<ClientStatement> {
-    const params = new HttpParams().set('token', token);
-    return this.http.get<ClientStatement>(this.apiUrl, { params });
+  private unwrapResponse<TResponse>(response: any): TResponse {
+    if (response == null) return response as TResponse;
+    // Common wrappers: { success, data }, { Data }, or raw object/array
+    if (typeof response === 'object') {
+      if ('data' in response) return (response as any).data as TResponse;
+      if ('Data' in response) return (response as any).Data as TResponse;
+    }
+    return response as TResponse;
   }
 
-  // Mock data for development
-  getMockStatement(): Observable<ClientStatement> {
-    return new Observable(observer => {
-      setTimeout(() => {
-        // Generate random data for demonstration
-        const clients = [
-          'أحمد محمد علي',
-          'فاطمة أحمد حسن',
-          'محمد علي محمود',
-          'سارة أحمد كريم',
-          'علي حسن محمد',
-          'نور الدين أحمد',
-          'مريم علي حسن',
-          'يوسف محمد أحمد'
-        ];
-        
-        const currencies = ['ج.م', 'دولار', 'يورو', 'ريال'];
-        
-        const randomClient = clients[Math.floor(Math.random() * clients.length)];
-        const randomCurrency = currencies[Math.floor(Math.random() * currencies.length)];
-        const randomBalance = Math.random() * 50000 + 1000; // بين 1000 و 51000
-        const randomDate = new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000); // خلال آخر 30 يوم
-        
-        const accountTypes = ['حساب جاري', 'حساب توفير', 'حساب استثماري'];
-        const statuses = ['نشط', 'معلق', 'مغلق مؤقتاً'];
-        
-        observer.next({
-          clientName: randomClient,
-          currentBalance: parseFloat(randomBalance.toFixed(2)),
-          currency: randomCurrency,
-          lastTransactionDate: randomDate.toISOString().split('T')[0],
-          accountNumber: 'EG' + Math.floor(Math.random() * 9000000000 + 1000000000),
-          accountType: accountTypes[Math.floor(Math.random() * accountTypes.length)],
-          status: statuses[Math.floor(Math.random() * statuses.length)]
-        });
-        observer.complete();
-      }, 800); // أسرع قليلاً
-    });
+  getClientStatement(key: string, hash: string): Observable<ClientAccountStatementDto> {
+    return this.http
+      .get<any>(this.baseUrl + 'ClientStatement/statement', { params: { key, hash } })
+      .pipe(map(r => this.unwrapResponse<ClientAccountStatementDto>(r)));
   }
-} 
+
+  getClientTransactions(key: string, hash: string): Observable<AccountTransactionDto[]> {
+    return this.http
+      .get<any>(this.baseUrl + 'ClientStatement/transactions', { params: { key, hash } })
+      .pipe(map(r => this.unwrapResponse<AccountTransactionDto[]>(r)));
+  }
+
+  getSupplierStatement(key: string, hash: string): Observable<SupplierAccountStatementDto> {
+    return this.http
+      .get<any>(this.baseUrl + 'SupplierStatement/statement', { params: { key, hash } })
+      .pipe(map(r => this.unwrapResponse<SupplierAccountStatementDto>(r)));
+  }
+
+  getSupplierTransactions(key: string, hash: string): Observable<AccountTransactionDto[]> {
+    return this.http
+      .get<any>(this.baseUrl + 'SupplierStatement/transactions', { params: { key, hash } })
+      .pipe(map(r => this.unwrapResponse<AccountTransactionDto[]>(r)));
+  }
+}

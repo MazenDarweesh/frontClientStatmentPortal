@@ -6,7 +6,7 @@ import { CardModule } from 'primeng/card';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { MessageModule } from 'primeng/message';
 
-import { StatementService, ClientStatement } from '../../services/statement.service';
+import { StatementService } from '../../services/statement.service';
 
 @Component({
   selector: 'app-statement',
@@ -22,7 +22,7 @@ import { StatementService, ClientStatement } from '../../services/statement.serv
   styleUrls: ['./statement.component.css']
 })
 export class StatementComponent implements OnInit {
-  statement: ClientStatement | null = null;
+  statement: any | null = null;
   loading = true;
   error = false;
   errorMessage = '';
@@ -58,30 +58,20 @@ export class StatementComponent implements OnInit {
       this.loading = false;
     }, 3000); // 3 ثواني
     
-    // استخدام Mock data للتطوير
-    this.statementService.getMockStatement().subscribe({
-      next: (data) => {
-        console.log('Statement data received:', data);
-        clearTimeout(timeout);
-        this.statement = data;
-        this.loading = false;
-      },
-      error: (error) => {
-        console.error('Error loading statement:', error);
-        clearTimeout(timeout);
-        // Fallback data في حالة الخطأ
-        this.statement = {
-          clientName: 'أحمد محمد علي',
-          currentBalance: 15420.50,
-          currency: 'ج.م',
-          lastTransactionDate: '2024-01-15',
-          accountNumber: 'EG1234567890',
-          accountType: 'حساب جاري',
-          status: 'نشط'
-        };
-        this.loading = false;
-      }
-    });
+    // مؤقتاً: عرض بيانات افتراضية حتى يتم ربط الباك
+    setTimeout(() => {
+      clearTimeout(timeout);
+      this.statement = {
+        clientName: 'أحمد محمد علي',
+        currentBalance: 15420.5,
+        currency: 'ج.م',
+        lastTransactionDate: '2024-01-15',
+        accountNumber: 'EG1234567890',
+        accountType: 'حساب جاري',
+        status: 'نشط'
+      };
+      this.loading = false;
+    }, 600);
   }
 
   viewFullStatement(): void {

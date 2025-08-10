@@ -20,7 +20,8 @@
               {
                 "glob": "**/*",
                 "input": "public"
-              }
+              },
+              "src/assets"
             ],
             "styles": [
               "primeicons/primeicons.css",
@@ -73,13 +74,14 @@
         },
         "test": {
           "builder": "@angular/build:karma",
-          "options": {
+            "options": {
             "tsConfig": "tsconfig.spec.json",
             "assets": [
               {
                 "glob": "**/*",
                 "input": "public"
-              }
+                },
+                "src/assets"
             ],
             "styles": [
               "src/styles.css"
