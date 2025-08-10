@@ -13,6 +13,14 @@ export const routes: Routes = [
     path: 'supplier-statement',
     loadComponent: () => import('./components/supplier-statement/supplier-statement.component').then(m => m.SupplierStatementComponent)
   },
+  {
+    path: 'client-transactions',
+    loadComponent: () => import('./components/client-transactions/client-transactions.component').then(m => m.ClientTransactionsComponent)
+  },
+  {
+    path: 'supplier-transactions',
+    loadComponent: () => import('./components/supplier-transactions/supplier-transactions.component').then(m => m.SupplierTransactionsComponent)
+  },
   { path: '', pathMatch: 'full', redirectTo: 'view-statement' },
   { path: '**', redirectTo: 'view-statement' }
 ];

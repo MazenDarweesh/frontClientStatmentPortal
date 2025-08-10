@@ -1,0 +1,115 @@
+<!-- Header with logo at top left -->
+<div class="header-container">
+  <div class="header-content">
+    <a href="https://egydynamic.com/" target="_blank" class="system-link">
+      <img src="assets/EGYD-Logo.png" alt="Dynamic Pro logo" class="logo" />
+      <span class="system-title">Dynamic <span class="pro">Pro</span></span>
+    </a>
+    <button 
+      class="language-switch-btn"
+      (click)="switchLanguage()">
+      {{ 'SWITCH_LANGUAGE' | translate }}
+    </button>
+  </div>
+</div>
+
+<div class="statement-container">
+  <!-- Loading State -->
+  <div *ngIf="loading" class="loading-container">
+    <p-progressSpinner 
+      styleClass="w-4rem h-4rem" 
+      strokeWidth="4" 
+      fill="var(--surface-ground)" 
+      animationDuration=".5s">
+    </p-progressSpinner>
+    <p class="mt-3 text-lg">{{ 'LOADING_DATA' | translate }}</p>
+  </div>
+
+  <!-- Error State -->
+  <div *ngIf="error" class="error-container">
+    <p-message 
+      severity="error" 
+      [text]="errorMessage"
+      styleClass="w-full">
+    </p-message>
+  </div>
+
+  <!-- Statement Content -->
+  <div *ngIf="!loading && !error && statement" class="statement-content">
+                <!-- Main Statement Card -->
+                <div class="main-statement-card">
+                  <!-- Header Section -->
+                  <div class="card-header">
+                    <div class="account-icon">
+                      <i class="pi pi-home"></i>
+                    </div>
+                    <div class="account-name">
+                      {{ statement.supplierName }}
+                    </div>
+                  </div>
+
+                  <!-- Balance Section -->
+                  <div class="balance-section">
+                    <div class="balance-label">{{ 'CURRENT_BALANCE' | translate }}</div>
+                    <div class="balance-amount">
+                      <span class="amount">{{ statement.balance | number:'1.2-2' }}</span>
+                      <span class="currency">{{ statement.currency || 'egp' }}</span>
+                    </div>
+                  </div>
+
+                  <!-- Message Section -->
+                  <div class="message-section">
+                    <p class="welcome-text">{{ 'WELCOME_MESSAGE' | translate }}</p>
+                    <p class="instruction-text">{{ 'CLICK_TRANSACTION_HISTORY' | translate }}</p>
+                  </div>
+
+                  <!-- Action Button -->
+                  <div class="action-section">
+                    <button class="transaction-history-btn" (click)="viewFullStatement()">
+                      {{ 'VIEW_FULL_STATEMENT' | translate }}
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Payment Methods Footer -->
+                <div class="payment-methods">
+                  <div class="payment-item">
+                    <i class="pi pi-credit-card"></i>
+                    <span>VISA</span>
+                  </div>
+                  <div class="payment-item">
+                    <i class="pi pi-credit-card"></i>
+                    <span>Mastercard</span>
+                  </div>
+                  <div class="payment-item">
+                    <i class="pi pi-wallet"></i>
+                    <span>Meeza</span>
+                  </div>
+                  <div class="payment-item">
+                    <i class="pi pi-money-bill"></i>
+                    <span>Fawry</span>
+                  </div>
+                  <div class="payment-item">
+                    <i class="pi pi-wallet"></i>
+                    <span>ValU</span>
+                  </div>
+                  <div class="payment-item">
+                    <i class="pi pi-building"></i>
+                    <span>Bank</span>
+                  </div>
+                  <div class="payment-item">
+                    <i class="pi pi-wallet"></i>
+                    <span>Wallet</span>
+                  </div>
+                </div>
+  </div>
+
+  <!-- No Data State -->
+  <div *ngIf="!loading && !error && !statement" class="no-data-container">
+    <p-message 
+      severity="info" 
+      [text]="'NO_DATA_AVAILABLE' | translate"
+      styleClass="w-full">
+    </p-message>
+  </div>
+</div>

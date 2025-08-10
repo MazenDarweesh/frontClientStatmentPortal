@@ -22,11 +22,13 @@ export interface SupplierAccountStatementDto {
 }
 
 export interface AccountTransactionDto {
+  id: number;
   type: string;
   amount: number;
   currency: string;
   date: string;
-  notes: string;
+  notes?: string;
+  reference?: string;
   status: string;
 }
 

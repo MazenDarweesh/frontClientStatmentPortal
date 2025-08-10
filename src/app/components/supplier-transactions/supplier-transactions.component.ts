@@ -1,23 +1,22 @@
 import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
-import { CardModule } from 'primeng/card';
-import { ButtonModule } from 'primeng/button';
+import { TableModule } from 'primeng/table';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { MessageModule } from 'primeng/message';
-import { StatementService, SupplierAccountStatementDto, AccountTransactionDto, ApiResponse } from '../../services/statement.service';
+import { StatementService, SupplierAccountStatementDto, AccountTransactionDto } from '../../services/statement.service';
 import { TranslatePipe } from '../../pipes/translate.pipe';
 import { TranslationService } from '../../services/translation.service';
 import { Subscription } from 'rxjs';
 
 @Component({
-  selector: 'app-supplier-statement',
+  selector: 'app-supplier-transactions',
+  templateUrl: './supplier-transactions.component.html',
+  styleUrls: ['./supplier-transactions.component.css'],
   standalone: true,
-  imports: [CommonModule, CardModule, ButtonModule, ProgressSpinnerModule, MessageModule, TranslatePipe],
-  templateUrl: './supplier-statement.component.html',
-  styleUrls: ['./supplier-statement.component.css']
+  imports: [CommonModule, TableModule, ProgressSpinnerModule, MessageModule, TranslatePipe]
 })
-export class SupplierStatementComponent implements OnInit, OnDestroy {
+export class SupplierTransactionsComponent implements OnInit, OnDestroy {
   statement: SupplierAccountStatementDto | null = null;
   transactions: AccountTransactionDto[] = [];
   loading = true;
@@ -30,7 +29,7 @@ export class SupplierStatementComponent implements OnInit, OnDestroy {
   constructor(
     private route: ActivatedRoute, 
     private router: Router, 
-    private statementService: StatementService, 
+    private statementService: StatementService,
     private translationService: TranslationService,
     private cdr: ChangeDetectorRef
   ) {}
@@ -46,23 +45,13 @@ export class SupplierStatementComponent implements OnInit, OnDestroy {
       this.hash = params['hash'];
       
       if (!this.key || !this.hash) {
-        // Fallback demo content when deep-link params are missing
-        this.statement = {
-          supplierName: 'Demo Supplier',
-          vatNumber: 'EG123456789',
-          balance: 15234.75
-        } as SupplierAccountStatementDto;
-        this.transactions = [
-          { type: 'Deposit', amount: 5000, currency: 'EGP', date: '2024-12-01', notes: 'Initial', status: 'Completed' },
-          { type: 'Purchase', amount: -1200.5, currency: 'EGP', date: '2024-12-05', notes: 'Order #A102', status: 'Completed' },
-          { type: 'Refund', amount: 300, currency: 'EGP', date: '2024-12-08', notes: 'Order #A102', status: 'Completed' }
-        ] as AccountTransactionDto[];
+        this.error = true;
+        this.errorMessage = 'Missing required parameters';
         this.loading = false;
-        this.error = false;
         return;
       }
       
-      this.loadStatement();
+      this.loadData();
     });
   }
 
@@ -78,12 +67,11 @@ export class SupplierStatementComponent implements OnInit, OnDestroy {
     this.translationService.setLanguage(newLang);
   }
 
-  loadStatement() {
+  loadData() {
+    // Load statement data
     this.statementService.getSupplierStatement(this.key!, this.hash!).subscribe({
       next: (dto: SupplierAccountStatementDto) => {
         this.statement = dto;
-        this.loading = false;
-        this.error = false;
       },
       error: (err) => {
         console.error('Error loading supplier statement:', err);
@@ -93,35 +81,29 @@ export class SupplierStatementComponent implements OnInit, OnDestroy {
       }
     });
 
+    // Load transactions data
     this.statementService.getSupplierTransactions(this.key!, this.hash!).subscribe({
       next: (list: AccountTransactionDto[]) => {
         this.transactions = list;
+        this.loading = false;
+        this.error = false;
       },
       error: (err) => {
         console.error('Error loading supplier transactions:', err);
+        this.error = true;
+        this.errorMessage = err.message || 'Failed to load transactions';
+        this.loading = false;
       }
     });
   }
 
-  viewFullStatement() {
+  goBack() {
     if (this.key && this.hash) {
-      this.router.navigate(['/supplier-transactions'], {
+      this.router.navigate(['/supplier-statement'], {
         queryParams: { key: this.key, hash: this.hash }
       });
+    } else {
+      this.router.navigate(['/supplier-statement']);
     }
   }
-
-  refreshData(): void {
-    if (!this.statement) return;
-    const key = this.route.snapshot.queryParamMap.get('key');
-    const hash = this.route.snapshot.queryParamMap.get('hash');
-    if (!key || !hash) return;
-    this.loading = true;
-    this.statementService.getSupplierStatement(key, hash).subscribe({
-      next: (dto) => { this.statement = dto; this.loading = false; },
-      error: () => { this.loading = false; this.error = true; this.errorMessage = 'Network error'; }
-    });
-  }
 }
-
-
