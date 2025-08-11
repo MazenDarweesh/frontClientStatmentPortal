@@ -22,10 +22,8 @@ export class StatementRouterComponent implements OnInit {
       return;
     }
 
-    if (role === 'C') {
-      this.router.navigate(['/client-statement'], { queryParams: { key, hash } });
-    } else if (role === 'S') {
-      this.router.navigate(['/supplier-statement'], { queryParams: { key, hash } });
+    if (role === 'C' || role === 'S') {
+      this.router.navigate(['/client-statement'], { queryParams: { key, hash, role } });
     }
   }
 }

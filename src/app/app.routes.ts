@@ -11,7 +11,8 @@ export const routes: Routes = [
   },
   {
     path: 'supplier-statement',
-    loadComponent: () => import('./components/supplier-statement/supplier-statement.component').then(m => m.SupplierStatementComponent)
+    data: { role: 'S' },
+    loadComponent: () => import('./components/client-statement/client-statement.component').then(m => m.ClientStatementComponent)
   },
   {
     path: 'client-transactions',
@@ -19,7 +20,8 @@ export const routes: Routes = [
   },
   {
     path: 'supplier-transactions',
-    loadComponent: () => import('./components/supplier-transactions/supplier-transactions.component').then(m => m.SupplierTransactionsComponent)
+    data: { role: 'S' },
+    loadComponent: () => import('./components/client-transactions/client-transactions.component').then(m => m.ClientTransactionsComponent)
   },
   { path: '', pathMatch: 'full', redirectTo: 'view-statement' },
   { path: '**', redirectTo: 'view-statement' }

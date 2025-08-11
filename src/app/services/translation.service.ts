@@ -34,6 +34,10 @@ export interface TranslationKeys {
   DEBIT: string;
   CREDIT: string;
   RUNNING_BALANCE: string;
+  DESCRIPTION: string;
+  PHONE: string;
+  ADDRESS: string;
+  COMPANY: string;
 }
 
 const translations: Record<Language, TranslationKeys> = {
@@ -67,7 +71,11 @@ const translations: Record<Language, TranslationKeys> = {
               NOTE: 'ملاحظة',
               DEBIT: 'مدين',
               CREDIT: 'دائن',
-              RUNNING_BALANCE: 'الرصيد الجاري'
+              RUNNING_BALANCE: 'الرصيد الجاري',
+              DESCRIPTION: 'الوصف',
+              PHONE: 'الهاتف',
+              ADDRESS: 'العنوان',
+              COMPANY: 'الشركة'
   },
   en: {
     LOADING_DATA: 'Loading data...',
@@ -99,7 +107,11 @@ const translations: Record<Language, TranslationKeys> = {
               NOTE: 'Note',
               DEBIT: 'Debit',
               CREDIT: 'Credit',
-              RUNNING_BALANCE: 'Running balance'
+              RUNNING_BALANCE: 'Running balance',
+              DESCRIPTION: 'Description',
+              PHONE: 'Phone',
+              ADDRESS: 'Address',
+              COMPANY: 'Company'
   }
 };
 

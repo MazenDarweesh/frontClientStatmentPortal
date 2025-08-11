@@ -7,9 +7,9 @@
         {{ 'BACK_TO_STATEMENT' | translate }}
       </button>
       <div class="client-info">
-        <h1 class="client-name">{{ statement?.clientName }}</h1>
+        <h1 class="client-name">{{ displayName }}</h1>
         <div class="balance-display">
-          <span class="balance-amount">{{ statement?.balance | number:'1.2-2' }}</span>
+          <span class="balance-amount">{{ currentBalance | number:'1.2-2' }}</span>
           <span class="balance-currency">{{ statement?.currency || '' }}</span>
         </div>
       </div>
@@ -49,6 +49,26 @@
       <h2 class="transactions-title">{{ 'TRANSACTIONS' | translate }}</h2>
     </div>
 
+    <!-- Details Section -->
+    <div class="details-section">
+      <div class="detail-row" *ngIf="company">
+        <span class="detail-label">{{ 'COMPANY' | translate }}:</span>
+        <span class="detail-value">{{ company }}</span>
+      </div>
+      <div class="detail-row" *ngIf="phone">
+        <span class="detail-label">{{ 'PHONE' | translate }}:</span>
+        <span class="detail-value">{{ phone }}</span>
+      </div>
+      <div class="detail-row" *ngIf="address">
+        <span class="detail-label">{{ 'ADDRESS' | translate }}:</span>
+        <span class="detail-value">{{ address }}</span>
+      </div>
+      <div class="detail-row" *ngIf="description">
+        <span class="detail-label">{{ 'DESCRIPTION' | translate }}:</span>
+        <span class="detail-value">{{ description }}</span>
+      </div>
+    </div>
+
     <!-- Summary Cards -->
     <div class="summary-cards">
       <div class="summary-card paid-in">
@@ -74,7 +94,7 @@
       <div class="summary-card current-balance">
         <div class="card-content">
           <div class="card-label">{{ 'CURRENT_BALANCE' | translate }}</div>
-          <div class="card-amount">{{ statement?.balance | number:'1.2-2' }} {{ statement?.currency || 'egp' }}</div>
+          <div class="card-amount">{{ currentBalance | number:'1.2-2' }} {{ statement?.currency || 'egp' }}</div>
           <div class="period-text" *ngIf="statement?.fromDate && statement?.toDate">
             {{ statement?.fromDate | date:'dd MMM yyyy' }} - {{ statement?.toDate | date:'dd MMM yyyy' }}
           </div>

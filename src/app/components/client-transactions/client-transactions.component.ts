@@ -4,10 +4,12 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { TableModule } from 'primeng/table';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { MessageModule } from 'primeng/message';
-import { StatementService, ClientAccountStatementDto, AccountTransactionDto } from '../../services/statement.service';
+import { StatementService, ClientAccountStatementDto, SupplierAccountStatementDto, AccountTransactionDto } from '../../services/statement.service';
 import { TranslatePipe } from '../../pipes/translate.pipe';
 import { TranslationService } from '../../services/translation.service';
 import { Subscription } from 'rxjs';
+
+type AnyAccountStatementDto = ClientAccountStatementDto | SupplierAccountStatementDto;
 
 @Component({
   selector: 'app-client-transactions',
@@ -16,14 +18,23 @@ import { Subscription } from 'rxjs';
   standalone: true,
   imports: [CommonModule, TableModule, ProgressSpinnerModule, MessageModule, TranslatePipe]
 })
+
 export class ClientTransactionsComponent implements OnInit, OnDestroy {
-  statement: ClientAccountStatementDto | null = null;
+  statement: AnyAccountStatementDto | null = null;
   transactions: AccountTransactionDto[] = [];
   loading = true;
   error = false;
   errorMessage = '';
   key: string | null = null;
   hash: string | null = null;
+  role: string | null = null;
+  displayName = '';
+  get currentBalance(): number {
+    if (this.statement && typeof (this.statement as any).balance === 'number') {
+      return (this.statement as any).balance as number;
+    }
+    return this.transactions.reduce((sum, t) => sum + (t?.amount ?? 0), 0);
+  }
   private languageSubscription: Subscription | null = null;
   public get isRtl() {
     return this.translationService.getCurrentLanguage() === 'ar';
@@ -46,6 +57,7 @@ export class ClientTransactionsComponent implements OnInit, OnDestroy {
     this.route.queryParams.subscribe(params => {
       this.key = params['key'];
       this.hash = params['hash'];
+      this.role = params['role'] || (this.route.snapshot.data && (this.route.snapshot.data as any)['role']) || null;
       
       if (!this.key || !this.hash) {
         this.error = true;
@@ -70,43 +82,91 @@ export class ClientTransactionsComponent implements OnInit, OnDestroy {
     this.translationService.setLanguage(newLang);
   }
 
-  loadData() {
-    // Load statement data
-    this.statementService.getClientStatement(this.key!, this.hash!).subscribe({
-      next: (dto: ClientAccountStatementDto) => {
-        this.statement = dto;
-      },
-      error: (err) => {
-        console.error('Error loading client statement:', err);
-        this.error = true;
-        this.errorMessage = err.message || 'Failed to load client statement';
-        this.loading = false;
-      }
-    });
+  private computeDisplayName(dto: AnyAccountStatementDto | null): string {
+    if (!dto) return '';
+    return (dto as any).clientName || (dto as any).supplierName || (dto as any).name || '';
+  }
 
-    // Load transactions data
-    this.statementService.getClientTransactions(this.key!, this.hash!).subscribe({
-      next: (list: AccountTransactionDto[]) => {
-        this.transactions = list;
-        this.loading = false;
-        this.error = false;
-      },
-      error: (err) => {
-        console.error('Error loading client transactions:', err);
-        this.error = true;
-        this.errorMessage = err.message || 'Failed to load transactions';
-        this.loading = false;
-      }
-    });
+  get phone(): string | undefined {
+    return (this.statement as any)?.phone;
+  }
+  get address(): string | null | undefined {
+    return (this.statement as any)?.address;
+  }
+  get company(): string | undefined {
+    return (this.statement as any)?.company;
+  }
+  get description(): string | undefined {
+    return (this.statement as any)?.eDescription;
+  }
+
+  loadData() {
+    const isSupplier = this.role === 'S';
+
+    if (isSupplier) {
+      this.statementService.getSupplierStatement(this.key!, this.hash!).subscribe({
+        next: (dto) => {
+          this.statement = dto as AnyAccountStatementDto;
+          this.displayName = this.computeDisplayName(this.statement);
+        },
+        error: (err: any) => {
+          console.error('Error loading statement:', err);
+          this.error = true;
+          this.errorMessage = err?.message || 'Failed to load statement';
+          this.loading = false;
+        }
+      });
+
+      this.statementService.getSupplierTransactions(this.key!, this.hash!).subscribe({
+        next: (list) => {
+          this.transactions = list;
+          this.loading = false;
+          this.error = false;
+        },
+        error: (err: any) => {
+          console.error('Error loading transactions:', err);
+          this.error = true;
+          this.errorMessage = err?.message || 'Failed to load transactions';
+          this.loading = false;
+        }
+      });
+    } else {
+      this.statementService.getClientStatement(this.key!, this.hash!).subscribe({
+        next: (dto) => {
+          this.statement = dto as AnyAccountStatementDto;
+          this.displayName = this.computeDisplayName(this.statement);
+        },
+        error: (err: any) => {
+          console.error('Error loading statement:', err);
+          this.error = true;
+          this.errorMessage = err?.message || 'Failed to load statement';
+          this.loading = false;
+        }
+      });
+
+      this.statementService.getClientTransactions(this.key!, this.hash!).subscribe({
+        next: (list) => {
+          this.transactions = list;
+          this.loading = false;
+          this.error = false;
+        },
+        error: (err: any) => {
+          console.error('Error loading transactions:', err);
+          this.error = true;
+          this.errorMessage = err?.message || 'Failed to load transactions';
+          this.loading = false;
+        }
+      });
+    }
   }
 
   goBack() {
     if (this.key && this.hash) {
       this.router.navigate(['/client-statement'], {
-        queryParams: { key: this.key, hash: this.hash }
+        queryParams: { key: this.key, hash: this.hash, role: this.role || undefined }
       });
     } else {
-      this.router.navigate(['/client-statement']);
+      this.router.navigate(['/client-statement'], { queryParams: this.role ? { role: this.role } : undefined });
     }
   }
 
