@@ -25,12 +25,28 @@ export class SupplierTransactionsComponent implements OnInit, OnDestroy {
   key: string | null = null;
   hash: string | null = null;
   private languageSubscription: Subscription | null = null;
+  public get isRtl() {
+    return this.translationService.getCurrentLanguage() === 'ar';
+  }
+  getTotalPaidIn(): number {
+    return this.transactions.filter(t => t.amount > 0).reduce((sum, t) => sum + t.amount, 0);
+  }
+  getTotalPaidOut(): number {
+    return this.transactions.filter(t => t.amount < 0).reduce((sum, t) => sum + Math.abs(t.amount), 0);
+  }
+  getRunningBalance(index: number): number {
+    let balance = 0;
+    for (let i = 0; i <= index; i++) {
+      balance += this.transactions[i].amount;
+    }
+    return balance;
+  }
 
   constructor(
     private route: ActivatedRoute, 
     private router: Router, 
     private statementService: StatementService,
-    private translationService: TranslationService,
+    public translationService: TranslationService,
     private cdr: ChangeDetectorRef
   ) {}
 

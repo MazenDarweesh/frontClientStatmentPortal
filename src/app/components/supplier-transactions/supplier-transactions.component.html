@@ -1,6 +1,6 @@
 <!-- Header -->
-<div class="header">
-  <div class="header-content">
+<div class="header" [attr.dir]="translationService.getCurrentLanguage() === 'ar' ? 'rtl' : 'ltr'">
+  <div class="header-content" [class.rtl]="translationService.getCurrentLanguage() === 'ar'">
     <div class="header-left">
       <button class="back-btn" (click)="goBack()">
         <i class="pi pi-arrow-left"></i>
@@ -22,7 +22,7 @@
   </div>
 </div>
 
-<div class="transactions-container">
+<div class="transactions-container" [class.rtl]="translationService.getCurrentLanguage() === 'ar'">
   <!-- Loading State -->
   <div *ngIf="loading" class="loading-container">
     <p-progressSpinner 
@@ -46,99 +46,102 @@
   <!-- Transactions Content -->
   <div *ngIf="!loading && !error" class="transactions-content">
     <div class="transactions-header">
-      <h2 class="transactions-title">{{ 'TRANSACTIONS_HISTORY' | translate }}</h2>
-      <p class="transactions-subtitle">{{ 'TRANSACTIONS' | translate }}</p>
+      <h2 class="transactions-title">{{ 'TRANSACTIONS' | translate }}</h2>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="summary-cards">
+      <div class="summary-card paid-in">
+        <div class="card-content">
+          <div class="card-label">{{ 'PAID_IN' | translate }}</div>
+          <div class="card-amount positive">{{ getTotalPaidIn() | number:'1.2-2' }} {{ statement?.currency || 'egp' }}</div>
+        </div>
+        <div class="card-icon">
+          <i class="pi pi-arrow-up-right"></i>
+        </div>
+      </div>
+
+      <div class="summary-card paid-out">
+        <div class="card-content">
+          <div class="card-label">{{ 'PAID_OUT' | translate }}</div>
+          <div class="card-amount negative">{{ getTotalPaidOut() | number:'1.2-2' }} {{ statement?.currency || 'egp' }}</div>
+        </div>
+        <div class="card-icon">
+          <i class="pi pi-arrow-down-left"></i>
+        </div>
+      </div>
+
+      <div class="summary-card current-balance">
+        <div class="card-content">
+          <div class="card-label">{{ 'CURRENT_BALANCE' | translate }}</div>
+          <div class="card-amount">{{ statement?.balance | number:'1.2-2' }} {{ statement?.currency || 'egp' }}</div>
+          <div class="period-text" *ngIf="statement?.fromDate && statement?.toDate">
+            {{ statement?.fromDate | date:'dd MMM yyyy' }} - {{ statement?.toDate | date:'dd MMM yyyy' }}
+          </div>
+        </div>
+        <div class="card-icon">
+          <i class="pi pi-bookmark"></i>
+        </div>
+      </div>
     </div>
 
     <!-- Desktop Table View -->
     <div class="desktop-view">
-      <p-table 
-        [value]="transactions" 
-        [paginator]="true" 
-        [rows]="10"
-        [showCurrentPageReport]="true"
-        responsiveLayout="scroll"
-        styleClass="transactions-table"
-        [tableStyle]="{'min-width': '50rem'}"
-        currentPageReportTemplate="{{ 'SHOWING' | translate }} {first} {{ 'TO' | translate }} {last} {{ 'OF' | translate }} {totalRecords} {{ 'ENTRIES' | translate }}"
-        [rowsPerPageOptions]="[10, 25, 50]">
-        
-        <ng-template pTemplate="header">
-          <tr>
-            <th>{{ 'DATE' | translate }}</th>
-            <th>{{ 'TYPE' | translate }}</th>
-            <th>{{ 'REFERENCE' | translate }}</th>
-            <th>{{ 'AMOUNT' | translate }}</th>
-            <th>{{ 'STATUS' | translate }}</th>
-          </tr>
-        </ng-template>
-        
-        <ng-template pTemplate="body" let-transaction>
-          <tr>
-            <td>{{ transaction.date | date:'dd/MM/yyyy' }}</td>
-            <td>
-              <span class="transaction-type" [class]="'type-' + transaction.type.toLowerCase()">
-                {{ transaction.type }}
-              </span>
-            </td>
-            <td>{{ transaction.reference || transaction.notes || '-' }}</td>
-            <td>
-              <span class="transaction-amount" [class.positive]="transaction.amount > 0" [class.negative]="transaction.amount < 0">
-                {{ transaction.amount | number:'1.2-2' }} {{ transaction.currency }}
-              </span>
-            </td>
-            <td>
-              <span class="transaction-status" [class]="'status-' + transaction.status.toLowerCase()">
-                {{ transaction.status }}
-              </span>
-            </td>
-          </tr>
-        </ng-template>
-        
-        <ng-template pTemplate="emptymessage">
-          <tr>
-            <td colspan="5" class="text-center">
-              <div class="empty-state">
-                <i class="pi pi-inbox empty-icon"></i>
-                <p class="empty-text">{{ 'NO_TRANSACTIONS' | translate }}</p>
-              </div>
-            </td>
-          </tr>
-        </ng-template>
-      </p-table>
+      <div class="transactions-table-container">
+        <table class="transactions-table">
+          <thead>
+            <tr>
+              <th>{{ 'DATE' | translate }}</th>
+              <th>{{ 'NOTE' | translate }}</th>
+              <th>{{ 'DEBIT' | translate }}</th>
+              <th>{{ 'CREDIT' | translate }}</th>
+              <th>{{ 'RUNNING_BALANCE' | translate }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let transaction of transactions; let i = index">
+              <td>{{ transaction.date | date:'dd MMM yyyy, HH:mm' }}</td>
+              <td>{{ transaction.notes || transaction.reference || '-' }}</td>
+              <td>
+                <span *ngIf="transaction.amount < 0" class="debit-amount">
+                  {{ (transaction.amount * -1) | number:'1.2-2' }} {{ transaction.currency }}
+                </span>
+                <span *ngIf="transaction.amount >= 0">-</span>
+              </td>
+              <td>
+                <span *ngIf="transaction.amount > 0" class="credit-amount">
+                  {{ transaction.amount | number:'1.2-2' }} {{ transaction.currency }}
+                </span>
+                <span *ngIf="transaction.amount <= 0">-</span>
+              </td>
+              <td>{{ getRunningBalance(i) | number:'1.2-2' }} {{ transaction.currency }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
 
     <!-- Mobile Card View -->
     <div class="mobile-view">
       <div class="transaction-cards">
-        <div *ngFor="let transaction of transactions" class="transaction-card">
+        <div *ngFor="let transaction of transactions; let i = index" class="transaction-card">
           <div class="card-header">
-            <div class="transaction-date">{{ transaction.date | date:'dd/MM/yyyy' }}</div>
-            <div class="transaction-type" [class]="'type-' + transaction.type.toLowerCase()">
-              {{ transaction.type }}
+            <div class="transaction-date">{{ transaction.date | date:'dd MMM yyyy, HH:mm' }}</div>
+            <div class="transaction-amount" [class.positive]="transaction.amount > 0" [class.negative]="transaction.amount < 0">
+              <span *ngIf="transaction.amount > 0">+</span>{{ transaction.amount | number:'1.2-2' }} {{ transaction.currency }}
             </div>
           </div>
           <div class="card-body">
-            <div class="transaction-reference">
-              <span class="label">{{ 'REFERENCE' | translate }}:</span>
-              <span class="value">{{ transaction.reference || transaction.notes || '-' }}</span>
+            <div class="transaction-note">
+              {{ transaction.notes || transaction.reference || '-' }}
             </div>
-            <div class="transaction-amount-row">
-              <span class="label">{{ 'AMOUNT' | translate }}:</span>
-              <span class="amount" [class.positive]="transaction.amount > 0" [class.negative]="transaction.amount < 0">
-                {{ transaction.amount | number:'1.2-2' }} {{ transaction.currency }}
-              </span>
-            </div>
-            <div class="transaction-status-row">
-              <span class="label">{{ 'STATUS' | translate }}:</span>
-              <span class="status" [class]="'status-' + transaction.status.toLowerCase()">
-                {{ transaction.status }}
-              </span>
+            <div class="transaction-balance">
+              {{ 'RUNNING_BALANCE' | translate }}: {{ getRunningBalance(i) | number:'1.2-2' }} {{ transaction.currency }}
             </div>
           </div>
         </div>
       </div>
-      
+
       <!-- Mobile Empty State -->
       <div *ngIf="transactions.length === 0" class="mobile-empty-state">
         <i class="pi pi-inbox empty-icon"></i>

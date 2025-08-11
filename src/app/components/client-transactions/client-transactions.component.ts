@@ -25,12 +25,15 @@ export class ClientTransactionsComponent implements OnInit, OnDestroy {
   key: string | null = null;
   hash: string | null = null;
   private languageSubscription: Subscription | null = null;
+  public get isRtl() {
+    return this.translationService.getCurrentLanguage() === 'ar';
+  }
 
   constructor(
     private route: ActivatedRoute, 
     private router: Router, 
     private statementService: StatementService,
-    private translationService: TranslationService,
+    public translationService: TranslationService,
     private cdr: ChangeDetectorRef
   ) {}
 

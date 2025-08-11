@@ -10,6 +10,8 @@ export interface ClientAccountStatementDto {
   currency?: string;
   lastTransactionDate?: string;
   status?: string;
+  fromDate?: string;
+  toDate?: string;
 }
 
 export interface SupplierAccountStatementDto {
@@ -19,6 +21,8 @@ export interface SupplierAccountStatementDto {
   currency?: string;
   lastTransactionDate?: string;
   status?: string;
+  fromDate?: string;
+  toDate?: string;
 }
 
 export interface AccountTransactionDto {

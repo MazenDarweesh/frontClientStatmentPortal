@@ -500,3 +500,31 @@
     font-size: 0.9rem;
   }
 }
+
+.rtl {
+  direction: rtl;
+}
+.rtl .header-content {
+  flex-direction: row-reverse;
+}
+.rtl .header-left {
+  flex-direction: row-reverse;
+}
+.rtl .summary-cards {
+  direction: rtl;
+}
+.rtl .transactions-table th, .rtl .transactions-table td {
+  text-align: right;
+}
+.rtl .transactions-header, .rtl .transactions-title {
+  text-align: right;
+}
+.rtl .back-btn {
+  flex-direction: row-reverse;
+}
+/* Responsive fix for summary cards */
+@media (max-width: 900px) {
+  .summary-cards {
+    grid-template-columns: 1fr;
+  }
+}
