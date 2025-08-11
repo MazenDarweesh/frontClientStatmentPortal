@@ -82,7 +82,7 @@ export class StatementService {
       if (amount == null) amount = credit - debit;
       const rawDate = it?.date ?? it?.EDate ?? it?.eDate ?? it?.Date ?? it?.transactionDate ?? '';
       const date = this.normalizeDate(rawDate);
-      const notes = it?.notes ?? it?.EDescription ?? it?.description ?? it?.Note ?? '';
+      const notes = it?.notes ?? it?.EDescription ?? it?.EDESCRIPTION ?? it?.eDescription ?? it?.description ?? it?.Note ?? '';
       const currency = it?.currency ?? it?.Currency ?? '';
       const reference = it?.reference ?? it?.Ref ?? '';
       const status = it?.status ?? 'Completed';

@@ -62,32 +62,34 @@
                     <p class="welcome-text">{{ 'WELCOME_MESSAGE' | translate }}</p>
                     <p class="instruction-text">{{ 'CLICK_TRANSACTION_HISTORY' | translate }}</p>
                   </div>
+            <!-- Details Section -->
+            <div class="details-section fancy-details" *ngIf="company || phone">
+              <div class="detail-card" *ngIf="company">
+                <i class="pi pi-building detail-icon"></i>
+                <div class="detail-text">
+                  <span class="detail-label">{{ 'COMPANY' | translate }}</span>
+                  <span class="detail-value">{{ company }}</span>
+                </div>
+              </div>
+              <div class="detail-card" *ngIf="phone">
+                <i class="pi pi-phone detail-icon"></i>
+                <div class="detail-text">
+                  <span class="detail-label">{{ 'PHONE' | translate }}</span>
+                  <span class="detail-value">{{ phone }}</span>
+                </div>
+              </div>
+                <!-- View Transactions Button inside same flex group -->
+  <button class="transaction-history-btn" (click)="viewFullStatement()">
+    {{ 'VIEW_FULL_STATEMENT' | translate }}
+  </button>
+            </div>
 
-                  <!-- Details Section -->
-                  <div class="details-section">
-                    <div class="detail-row" *ngIf="company">
-                      <span class="detail-label">{{ 'COMPANY' | translate }}:</span>
-                      <span class="detail-value">{{ company }}</span>
-                    </div>
-                    <div class="detail-row" *ngIf="phone">
-                      <span class="detail-label">{{ 'PHONE' | translate }}:</span>
-                      <span class="detail-value">{{ phone }}</span>
-                    </div>
-                    <div class="detail-row" *ngIf="address">
-                      <span class="detail-label">{{ 'ADDRESS' | translate }}:</span>
-                      <span class="detail-value">{{ address }}</span>
-                    </div>
-                    <div class="detail-row" *ngIf="description">
-                      <span class="detail-label">{{ 'DESCRIPTION' | translate }}:</span>
-                      <span class="detail-value">{{ description }}</span>
-                    </div>
-                  </div>
 
                   <!-- Action Button -->
                   <div class="action-section">
-                    <button class="transaction-history-btn" (click)="viewFullStatement()">
+                    <!-- <button class="transaction-history-btn" (click)="viewFullStatement()">
                       {{ 'VIEW_FULL_STATEMENT' | translate }}
-                    </button>
+                    </button> -->
                   </div>
                 </div>
 
