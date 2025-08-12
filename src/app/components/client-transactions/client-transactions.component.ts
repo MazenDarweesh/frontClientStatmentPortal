@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TableModule } from 'primeng/table';
+import { SortEvent } from 'primeng/api';
 import { DragDropModule, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
 import { DatePickerModule } from 'primeng/datepicker';
 import { ButtonModule } from 'primeng/button';
@@ -35,11 +36,10 @@ export class ClientTransactionsComponent implements OnInit, OnDestroy {
   role: string | null = null;
   displayName = '';
   // Order of columns for dynamic rendering and drag-and-drop
-  public columns: Array<{ key: 'date' | 'notes' | 'amount' | 'index' | 'runningBalance' }> = [
+  public columns: Array<{ key: 'date' | 'notes' | 'amount' | 'runningBalance' }> = [
     { key: 'date' },
     { key: 'notes' },
     { key: 'amount' },
-    { key: 'index' },
     { key: 'runningBalance' }
   ];
   get currentBalance(): number {
@@ -214,6 +214,56 @@ export class ClientTransactionsComponent implements OnInit, OnDestroy {
       );
     } else {
       moveItemInArray(this.columns, event.previousIndex, event.currentIndex);
+    }
+  }
+
+  public onCustomSort(event: SortEvent) {
+    if (!event || !event.data) return;
+
+    // Precompute running balance for current order
+    const runningBalanceMap = new Map<AccountTransactionDto, number>();
+    let balance = 0;
+    for (const tx of event.data as AccountTransactionDto[]) {
+      balance += tx.amount;
+      runningBalanceMap.set(tx, balance);
+    }
+
+    const compare = (a: AccountTransactionDto, b: AccountTransactionDto, field: string, order: number) => {
+      const getValue = (t: AccountTransactionDto): any => {
+        switch (field) {
+          case 'date':
+            return new Date((t as any).date).getTime();
+          case 'notes':
+            return (t.notes || t.reference || '') as string;
+          case 'amount':
+            return t.amount;
+          case 'runningBalance':
+            return runningBalanceMap.get(t) ?? 0;
+          default:
+            return '';
+        }
+      };
+      const v1 = getValue(a);
+      const v2 = getValue(b);
+      let result = 0;
+      if (typeof v1 === 'number' && typeof v2 === 'number') {
+        result = v1 - v2;
+      } else {
+        result = String(v1).localeCompare(String(v2));
+      }
+      return order * (result < 0 ? -1 : result > 0 ? 1 : 0);
+    };
+
+    if (event.multiSortMeta && event.multiSortMeta.length) {
+      (event.data as AccountTransactionDto[]).sort((a, b) => {
+        for (const meta of event.multiSortMeta!) {
+          const res = compare(a, b, meta.field as string, meta.order ?? 1);
+          if (res !== 0) return res;
+        }
+        return 0;
+      });
+    } else if (event.field) {
+      (event.data as AccountTransactionDto[]).sort((a, b) => compare(a, b, event.field as string, event.order ?? 1));
     }
   }
 }

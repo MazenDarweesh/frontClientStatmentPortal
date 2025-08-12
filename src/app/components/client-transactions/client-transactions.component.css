@@ -6,8 +6,8 @@
   right: 0;
   z-index: 1000;
   background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
   border-bottom: 1px solid rgba(0, 0, 0, 0.1);
   padding: 1rem 2rem;
 }
@@ -170,8 +170,8 @@
   background: rgba(255, 255, 255, 0.9);
   border-radius: 16px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-  backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
   overflow: hidden;
 }
 
@@ -273,10 +273,8 @@
   color: #dc2626;
 }
 
-/* Mobile Card View */
-.mobile-view {
-  display: none;
-}
+/* Mobile Card View (disabled to always show table) */
+.mobile-view { display: none; }
 
 .transaction-cards {
   display: flex;
@@ -288,8 +286,8 @@
   background: rgba(255, 255, 255, 0.9);
   border-radius: 12px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-  backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
   overflow: hidden;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
@@ -488,13 +486,9 @@
     font-size: 1rem;
   }
   
-  .desktop-view {
-    display: none;
-  }
-  
-  .mobile-view {
-    display: block;
-  }
+  /* Keep desktop table visible on mobile */
+  .desktop-view { display: block; }
+  .mobile-view { display: none; }
 }
 
 @media (max-width: 480px) {
@@ -772,9 +766,7 @@
 .rtl .transactions-table th, .rtl .transactions-table td {
   text-align: right;
 }
-.rtl .transactions-header, .rtl .transactions-title {
-  text-align: right;
-}
+
 .rtl .back-btn {
   flex-direction: row-reverse;
 }
@@ -787,6 +779,7 @@
 
 th[cdkDrag] {
   cursor: grab;
+  -webkit-user-select: none;
   user-select: none;
   background: var(--surface-b);
 }
