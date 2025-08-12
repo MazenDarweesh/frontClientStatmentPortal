@@ -53,6 +53,14 @@ export class ClientTransactionsComponent implements OnInit, OnDestroy {
     return this.translationService.getCurrentLanguage() === 'ar';
   }
 
+  private recomputeRunningBalances(list: AccountTransactionDto[]): void {
+    let balance = 0;
+    for (const tx of list) {
+      balance += tx.amount;
+      (tx as any).runningBalance = balance;
+    }
+  }
+
   constructor(
     private route: ActivatedRoute, 
     private router: Router, 
@@ -133,6 +141,7 @@ export class ClientTransactionsComponent implements OnInit, OnDestroy {
       this.statementService.getSupplierTransactions(this.key!, this.hash!).subscribe({
         next: (list) => {
           this.transactions = list.map(t => ({ ...t, date: new Date(t.date as any) })) as any;
+          this.recomputeRunningBalances(this.transactions);
           this.loading = false;
           this.error = false;
         },
@@ -160,6 +169,7 @@ export class ClientTransactionsComponent implements OnInit, OnDestroy {
       this.statementService.getClientTransactions(this.key!, this.hash!).subscribe({
         next: (list) => {
           this.transactions = list.map(t => ({ ...t, date: new Date(t.date as any) })) as any;
+          this.recomputeRunningBalances(this.transactions);
           this.loading = false;
           this.error = false;
         },
@@ -226,6 +236,7 @@ export class ClientTransactionsComponent implements OnInit, OnDestroy {
     for (const tx of event.data as AccountTransactionDto[]) {
       balance += tx.amount;
       runningBalanceMap.set(tx, balance);
+      (tx as any).runningBalance = balance;
     }
 
     const compare = (a: AccountTransactionDto, b: AccountTransactionDto, field: string, order: number) => {
@@ -265,5 +276,41 @@ export class ClientTransactionsComponent implements OnInit, OnDestroy {
     } else if (event.field) {
       (event.data as AccountTransactionDto[]).sort((a, b) => compare(a, b, event.field as string, event.order ?? 1));
     }
+  }
+
+  public onTableFilter(event: any) {
+    const list: AccountTransactionDto[] = (event && event.filteredValue) ? event.filteredValue : this.transactions;
+    this.recomputeRunningBalances(list);
+  }
+
+  public dateRangeFilter(value: any, filter: any): boolean {
+    if (!filter) return true;
+    const toDateOnly = (d: any): Date => {
+      const dt = d instanceof Date ? d : new Date(d);
+      return new Date(dt.getFullYear(), dt.getMonth(), dt.getDate());
+    };
+
+    const cell = toDateOnly(value);
+
+    // If filter is a single date → compare equality by day
+    if (filter instanceof Date) {
+      const f = toDateOnly(filter);
+      return cell.getTime() === f.getTime();
+    }
+
+    // If filter is an object with start/end
+    const start: Date | null = filter?.start ? toDateOnly(filter.start) : null;
+    const end: Date | null = filter?.end ? toDateOnly(filter.end) : null;
+
+    if (start && end) {
+      return cell.getTime() >= start.getTime() && cell.getTime() <= end.getTime();
+    }
+    if (start && !end) {
+      return cell.getTime() === start.getTime();
+    }
+    if (!start && end) {
+      return cell.getTime() <= end.getTime();
+    }
+    return true;
   }
 }

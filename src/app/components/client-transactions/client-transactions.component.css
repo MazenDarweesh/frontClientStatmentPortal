@@ -802,3 +802,6 @@ th[cdkDrag] {
   margin-right: 0;
   margin-left: 0.5rem;
 }
+
+/* small utility for spacing between date range pickers */
+.mt-half { margin-top: 0.5rem; }

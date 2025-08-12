@@ -122,6 +122,7 @@
         sortMode="multiple"
         (sortFunction)="onCustomSort($event)"
         [customSort]="true"
+        (onFilter)="onTableFilter($event)"
         [reorderableColumns]="false"
         [responsiveLayout]="'scroll'"
         dataKey="id"
@@ -135,11 +136,7 @@
                 <i class="pi pi-bars mr-2" cdkDragHandle></i>
                 {{ 'DATE' | translate }}
                 <p-sortIcon field="date"></p-sortIcon>
-                <p-columnFilter field="date" type="date" display="menu" [showMatchModes]="true" [showAddButton]="true" [showOperator]="true">
-                  <ng-template pTemplate="filter" let-value let-filter="filterCallback">
-                    <p-datepicker [ngModel]="value" (ngModelChange)="filter($event)" [touchUI]="true" [iconDisplay]="'input'" dateFormat="dd M yy"></p-datepicker>
-                  </ng-template>
-                </p-columnFilter>
+                <p-columnFilter field="date" type="date" display="menu" [showMatchModes]="true" [showOperator]="true" [showAddButton]="true"></p-columnFilter>
               </th>
 
               <!-- Notes column -->
@@ -155,7 +152,7 @@
                 <i class="pi pi-bars mr-2" cdkDragHandle></i>
                 {{ 'DEBIT' | translate }} / {{ 'CREDIT' | translate }}
                 <p-sortIcon field="amount"></p-sortIcon>
-                <p-columnFilter field="amount" display="menu" matchMode="gte"></p-columnFilter>
+                <p-columnFilter type="numeric" field="amount" display="menu" [currency]="statement?.currency || 'EGP'"></p-columnFilter>
               </th>
 
               <!-- Running balance column -->
@@ -163,6 +160,7 @@
                 <i class="pi pi-bars mr-2" cdkDragHandle></i>
                 {{ 'RUNNING_BALANCE' | translate }}
                 <p-sortIcon field="runningBalance"></p-sortIcon>
+                <p-columnFilter type="numeric" field="runningBalance" display="menu" [currency]="statement?.currency || 'EGP'"></p-columnFilter>
               </th>
             </ng-container>
           </tr>
