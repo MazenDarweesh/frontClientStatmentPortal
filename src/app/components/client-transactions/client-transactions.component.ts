@@ -1,12 +1,17 @@
 import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TableModule } from 'primeng/table';
+import { DragDropModule, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
+import { DatePickerModule } from 'primeng/datepicker';
+import { ButtonModule } from 'primeng/button';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { MessageModule } from 'primeng/message';
 import { StatementService, ClientAccountStatementDto, SupplierAccountStatementDto, AccountTransactionDto } from '../../services/statement.service';
 import { TranslatePipe } from '../../pipes/translate.pipe';
 import { TranslationService } from '../../services/translation.service';
+import { AppHeaderComponent } from '../layout/app-header/app-header.component';
 import { Subscription } from 'rxjs';
 
 type AnyAccountStatementDto = ClientAccountStatementDto | SupplierAccountStatementDto;
@@ -16,7 +21,7 @@ type AnyAccountStatementDto = ClientAccountStatementDto | SupplierAccountStateme
   templateUrl: './client-transactions.component.html',
   styleUrls: ['./client-transactions.component.css'],
   standalone: true,
-  imports: [CommonModule, TableModule, ProgressSpinnerModule, MessageModule, TranslatePipe]
+  imports: [CommonModule, FormsModule, TableModule, DatePickerModule, ButtonModule, ProgressSpinnerModule, MessageModule, TranslatePipe, AppHeaderComponent, DragDropModule]
 })
 
 export class ClientTransactionsComponent implements OnInit, OnDestroy {
@@ -29,6 +34,14 @@ export class ClientTransactionsComponent implements OnInit, OnDestroy {
   hash: string | null = null;
   role: string | null = null;
   displayName = '';
+  // Order of columns for dynamic rendering and drag-and-drop
+  public columns: Array<{ key: 'date' | 'notes' | 'amount' | 'index' | 'runningBalance' }> = [
+    { key: 'date' },
+    { key: 'notes' },
+    { key: 'amount' },
+    { key: 'index' },
+    { key: 'runningBalance' }
+  ];
   get currentBalance(): number {
     if (this.statement && typeof (this.statement as any).balance === 'number') {
       return (this.statement as any).balance as number;
@@ -119,7 +132,7 @@ export class ClientTransactionsComponent implements OnInit, OnDestroy {
 
       this.statementService.getSupplierTransactions(this.key!, this.hash!).subscribe({
         next: (list) => {
-          this.transactions = list;
+          this.transactions = list.map(t => ({ ...t, date: new Date(t.date as any) })) as any;
           this.loading = false;
           this.error = false;
         },
@@ -146,7 +159,7 @@ export class ClientTransactionsComponent implements OnInit, OnDestroy {
 
       this.statementService.getClientTransactions(this.key!, this.hash!).subscribe({
         next: (list) => {
-          this.transactions = list;
+          this.transactions = list.map(t => ({ ...t, date: new Date(t.date as any) })) as any;
           this.loading = false;
           this.error = false;
         },
@@ -188,5 +201,19 @@ export class ClientTransactionsComponent implements OnInit, OnDestroy {
       balance += this.transactions[i].amount;
     }
     return balance;
+  }
+
+  public dropColumn(event: CdkDragDrop<any[]>) {
+    const isRtl = this.translationService.getCurrentLanguage() === 'ar'; // ✅ NEW
+    if (isRtl) {
+      const total = this.columns.length - 1;
+      moveItemInArray(
+        this.columns,
+        total - event.previousIndex,
+        total - event.currentIndex
+      );
+    } else {
+      moveItemInArray(this.columns, event.previousIndex, event.currentIndex);
+    }
   }
 }

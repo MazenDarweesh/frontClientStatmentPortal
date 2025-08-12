@@ -9,13 +9,14 @@ import { StatementService, ClientAccountStatementDto, SupplierAccountStatementDt
 import { TranslatePipe } from '../../pipes/translate.pipe';
 import { TranslationService } from '../../services/translation.service';
 import { Subscription } from 'rxjs';
+import { AppHeaderComponent } from '../layout/app-header/app-header.component';
 
 type AnyAccountStatementDto = ClientAccountStatementDto | SupplierAccountStatementDto;
 
 @Component({
   selector: 'app-client-statement',
   standalone: true,
-  imports: [CommonModule, CardModule, ButtonModule, ProgressSpinnerModule, MessageModule, TranslatePipe],
+  imports: [CommonModule, CardModule, ButtonModule, ProgressSpinnerModule, MessageModule, TranslatePipe, AppHeaderComponent],
   templateUrl: './client-statement.component.html',
   styleUrls: ['./client-statement.component.css']
 })

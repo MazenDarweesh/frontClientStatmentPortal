@@ -1,28 +1,15 @@
-<!-- Header -->
-<div class="header" [attr.dir]="translationService.getCurrentLanguage() === 'ar' ? 'rtl' : 'ltr'">
-  <div class="header-content" [class.rtl]="translationService.getCurrentLanguage() === 'ar'">
-    <div class="header-left">
-      <button class="back-btn" (click)="goBack()">
-        <i class="pi pi-arrow-left"></i>
-        {{ 'BACK_TO_STATEMENT' | translate }}
-      </button>
-      <div class="client-info">
-        <h1 class="client-name">{{ displayName }}</h1>
-        <div class="balance-display">
-          <span class="balance-amount">{{ currentBalance | number:'1.2-2' }}</span>
-          <span class="balance-currency">{{ statement?.currency || '' }}</span>
-        </div>
-      </div>
-    </div>
-    <button 
-      class="language-switch-btn"
-      (click)="switchLanguage()">
-      {{ 'SWITCH_LANGUAGE' | translate }}
-    </button>
-  </div>
+<app-header></app-header>
+<div class="header-secondary">
+  <button class="back-btn" (click)="goBack()">
+    <i class="pi pi-arrow-left"></i>
+    {{ 'BACK_TO_STATEMENT' | translate }}
+  </button>
+  <div class="spacer"></div>
 </div>
 
-<div class="transactions-container" [class.rtl]="translationService.getCurrentLanguage() === 'ar'">
+<div class="transactions-container" 
+  [class.rtl]="translationService.getCurrentLanguage() === 'ar'"
+  [dir]="translationService.getCurrentLanguage() === 'ar' ? 'rtl' : 'ltr'">
   <!-- Loading State -->
   <div *ngIf="loading" class="loading-container">
     <p-progressSpinner 
@@ -50,22 +37,42 @@
     </div>
 
     <!-- Details Section -->
-    <div class="details-section">
+    <div class="details-section user-cards">
       <div class="detail-row" *ngIf="company">
-        <span class="detail-label">{{ 'COMPANY' | translate }}:</span>
-        <span class="detail-value">{{ company }}</span>
+        <div class="user-card">
+          <i class="pi pi-building card-icon"></i>
+          <div class="card-text">
+            <div class="card-label">{{ 'COMPANY' | translate }}</div>
+            <div class="card-value">{{ company }}</div>
+          </div>
+        </div>
       </div>
       <div class="detail-row" *ngIf="phone">
-        <span class="detail-label">{{ 'PHONE' | translate }}:</span>
-        <span class="detail-value">{{ phone }}</span>
+        <div class="user-card">
+          <i class="pi pi-phone card-icon"></i>
+          <div class="card-text">
+            <div class="card-label">{{ 'PHONE' | translate }}</div>
+            <div class="card-value">{{ phone }}</div>
+          </div>
+        </div>
       </div>
       <div class="detail-row" *ngIf="address">
-        <span class="detail-label">{{ 'ADDRESS' | translate }}:</span>
-        <span class="detail-value">{{ address }}</span>
+        <div class="user-card">
+          <i class="pi pi-map-marker card-icon"></i>
+          <div class="card-text">
+            <div class="card-label">{{ 'ADDRESS' | translate }}</div>
+            <div class="card-value">{{ address }}</div>
+          </div>
+        </div>
       </div>
       <div class="detail-row" *ngIf="description">
-        <span class="detail-label">{{ 'DESCRIPTION' | translate }}:</span>
-        <span class="detail-value">{{ description }}</span>
+        <div class="user-card">
+          <i class="pi pi-info-circle card-icon"></i>
+          <div class="card-text">
+            <div class="card-label">{{ 'DESCRIPTION' | translate }}</div>
+            <div class="card-value">{{ description }}</div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -107,38 +114,82 @@
 
     <!-- Desktop Table View -->
     <div class="desktop-view">
-      <div class="transactions-table-container">
-        <table class="transactions-table">
-          <thead>
-            <tr>
-              <th>{{ 'DATE' | translate }}</th>
-              <th>{{ 'NOTE' | translate }}</th>
-              <th>{{ 'DEBIT' | translate }}</th>
-              <th>{{ 'CREDIT' | translate }}</th>
-              <th>{{ 'RUNNING_BALANCE' | translate }}</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let transaction of transactions; let i = index">
-              <td>{{ transaction.date | date:'dd MMM yyyy, HH:mm' }}</td>
-              <td>{{ transaction.notes || transaction.reference || '-' }}</td>
-              <td>
+      <p-table
+        [value]="transactions"
+        [paginator]="true"
+        [rows]="10"
+        [rowsPerPageOptions]="[10,25,50]"
+        sortMode="multiple"
+        [reorderableColumns]="false"
+        [responsiveLayout]="'scroll'"
+        dataKey="id"
+        filterDisplay="menu"
+        [tableStyle]="{ 'min-width': '60rem' }">
+        <ng-template pTemplate="header">
+          <tr cdkDropList cdkDropListOrientation="horizontal" (cdkDropListDropped)="dropColumn($event)">
+            <ng-container *ngFor="let col of columns">
+              <!-- Date column -->
+              <th *ngIf="col.key === 'date'" cdkDrag [style.direction]="isRtl ? 'rtl' : 'ltr'" pSortableColumn="date">
+                <i class="pi pi-bars mr-2" cdkDragHandle></i>
+                {{ 'DATE' | translate }}
+                <p-sortIcon field="date"></p-sortIcon>
+                <p-columnFilter field="date" type="date" display="menu" [showMatchModes]="true" [showAddButton]="true" [showOperator]="true">
+                  <ng-template pTemplate="filter" let-value let-filter="filterCallback">
+                    <p-datepicker [ngModel]="value" (ngModelChange)="filter($event)" [touchUI]="true" [iconDisplay]="'input'" dateFormat="dd M yy"></p-datepicker>
+                  </ng-template>
+                </p-columnFilter>
+              </th>
+
+              <!-- Notes column -->
+              <th *ngIf="col.key === 'notes'" cdkDrag pSortableColumn="notes">
+                <i class="pi pi-bars mr-2" cdkDragHandle></i>
+                {{ 'NOTE' | translate }}
+                <p-sortIcon field="notes"></p-sortIcon>
+                <p-columnFilter field="notes" display="menu" matchMode="contains"></p-columnFilter>
+              </th>
+
+              <!-- Amount column -->
+              <th *ngIf="col.key === 'amount'" cdkDrag pSortableColumn="amount">
+                <i class="pi pi-bars mr-2" cdkDragHandle></i>
+                {{ 'DEBIT' | translate }} / {{ 'CREDIT' | translate }}
+                <p-sortIcon field="amount"></p-sortIcon>
+                <p-columnFilter field="amount" display="menu" matchMode="gte"></p-columnFilter>
+              </th>
+
+              <!-- Row index column -->
+              <th *ngIf="col.key === 'index'" cdkDrag>
+                <i class="pi pi-bars mr-2" cdkDragHandle></i>
+                #
+              </th>
+
+              <!-- Running balance column -->
+              <th *ngIf="col.key === 'runningBalance'" cdkDrag>
+                <i class="pi pi-bars mr-2" cdkDragHandle></i>
+                {{ 'RUNNING_BALANCE' | translate }}
+              </th>
+            </ng-container>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-transaction let-rowIndex="rowIndex">
+          <tr>
+            <ng-container *ngFor="let col of columns">
+              <td *ngIf="col.key === 'date'">{{ transaction.date | date:'dd MMM yyyy' }}</td>
+              <td *ngIf="col.key === 'notes'">{{ transaction.notes || transaction.reference || '-' }}</td>
+              <td *ngIf="col.key === 'amount'">
                 <span *ngIf="transaction.amount < 0" class="debit-amount">
                   {{ (transaction.amount * -1) | number:'1.2-2' }} {{ transaction.currency }}
                 </span>
-                <span *ngIf="transaction.amount >= 0">-</span>
-              </td>
-              <td>
                 <span *ngIf="transaction.amount > 0" class="credit-amount">
                   {{ transaction.amount | number:'1.2-2' }} {{ transaction.currency }}
                 </span>
-                <span *ngIf="transaction.amount <= 0">-</span>
+                <span *ngIf="transaction.amount === 0">-</span>
               </td>
-              <td>{{ getRunningBalance(i) | number:'1.2-2' }} {{ transaction.currency }}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+              <td *ngIf="col.key === 'index'">{{ rowIndex + 1 }}</td>
+              <td *ngIf="col.key === 'runningBalance'">{{ getRunningBalance(rowIndex) | number:'1.2-2' }} {{ transaction.currency }}</td>
+            </ng-container>
+          </tr>
+        </ng-template>
+      </p-table>
     </div>
 
     <!-- Mobile Card View -->
@@ -146,7 +197,7 @@
       <div class="transaction-cards">
         <div *ngFor="let transaction of transactions; let i = index" class="transaction-card">
           <div class="card-header">
-            <div class="transaction-date">{{ transaction.date | date:'dd MMM yyyy, HH:mm' }}</div>
+            <div class="transaction-date">{{ transaction.date | date:'dd MMM yyyy' }}</div>
             <div class="transaction-amount" [class.positive]="transaction.amount > 0" [class.negative]="transaction.amount < 0">
               <span *ngIf="transaction.amount > 0">+</span>{{ transaction.amount | number:'1.2-2' }} {{ transaction.currency }}
             </div>
@@ -169,4 +220,12 @@
       </div>
     </div>
   </div>
+</div>
+
+<!-- Footer with About link -->
+<div class="app-footer">
+  <div class="footer-inner">
+    <a class="about" href="https://egydynamic.com/about-us/" target="_blank">About us | تعرف علينا</a>
+  </div>
+  
 </div>
