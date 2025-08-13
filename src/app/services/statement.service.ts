@@ -42,6 +42,9 @@ export interface AccountTransactionDto {
   notes?: string;
   reference?: string;
   status: string;
+  runningBalance?: number;
+  debit?: number;
+  credit?: number;
 }
 
 export interface ApiResponse<T> {
@@ -80,6 +83,11 @@ export class StatementService {
       const credit = this.toNumber(it?.Credit ?? it?.credit) ?? 0;
       let amount = this.toNumber(it?.amount);
       if (amount == null) amount = credit - debit;
+      const computedDebit = amount < 0 ? Math.abs(amount) : 0;
+      const computedCredit = amount > 0 ? amount : 0;
+      const runningBalance = this.toNumber(
+        it?.runningBalance ?? it?.RunningBalance ?? it?.balanceAfter ?? it?.BalanceAfter ?? it?.balance ?? it?.Balance
+      );
       const rawDate = it?.date ?? it?.EDate ?? it?.eDate ?? it?.Date ?? it?.transactionDate ?? '';
       const date = this.normalizeDate(rawDate);
       const notes = it?.notes ?? it?.EDescription ?? it?.EDESCRIPTION ?? it?.eDescription ?? it?.description ?? it?.Note ?? '';
@@ -95,7 +103,10 @@ export class StatementService {
         date,
         notes,
         reference,
-        status
+        status,
+        runningBalance: runningBalance,
+        debit: this.toNumber(it?.debit ?? it?.Debit) ?? computedDebit,
+        credit: this.toNumber(it?.credit ?? it?.Credit) ?? computedCredit
       } as AccountTransactionDto;
     });
   }

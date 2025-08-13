@@ -36,7 +36,7 @@ export class ClientTransactionsComponent implements OnInit, OnDestroy {
   role: string | null = null;
   displayName = '';
   totalRecordsText = '';
-  // Order of columns for dynamic rendering and drag-and-drop
+  // Order of columns for dynamic rendering
   public columns: Array<{ key: 'date' | 'notes' | 'debit' | 'credit' | 'runningBalance' }> = [
     { key: 'date' },
     { key: 'notes' },
@@ -55,13 +55,8 @@ export class ClientTransactionsComponent implements OnInit, OnDestroy {
     return this.translationService.getCurrentLanguage() === 'ar';
   }
 
-  private recomputeRunningBalances(list: AccountTransactionDto[]): void {
-    let balance = 0;
-    for (const tx of list) {
-      balance += tx.amount;
-      (tx as any).runningBalance = balance;
-    }
-  }
+  // No recompute here: runningBalance comes from backend
+  private recomputeRunningBalances(_: AccountTransactionDto[]): void {}
 
   constructor(
     private route: ActivatedRoute, 
@@ -71,7 +66,10 @@ export class ClientTransactionsComponent implements OnInit, OnDestroy {
     private cdr: ChangeDetectorRef
   ) {}
 
-  ngOnInit(): void {
+    // ==== Lifecycle ====
+
+  ngOnInit(): void 
+  {
     // Subscribe to language changes
     this.languageSubscription = this.translationService.currentLanguage$.subscribe(() => {
       this.cdr.detectChanges();
@@ -99,11 +97,7 @@ export class ClientTransactionsComponent implements OnInit, OnDestroy {
     }
   }
 
-  switchLanguage() {
-    const currentLang = this.translationService.getCurrentLanguage();
-    const newLang = currentLang === 'ar' ? 'en' : 'ar';
-    this.translationService.setLanguage(newLang);
-  }
+
 
   private computeDisplayName(dto: AnyAccountStatementDto | null): string {
     if (!dto) return '';
@@ -122,7 +116,7 @@ export class ClientTransactionsComponent implements OnInit, OnDestroy {
   get description(): string | undefined {
     return (this.statement as any)?.eDescription;
   }
-
+//  API Layer
   loadData() {
     const isSupplier = this.role === 'S';
 
@@ -142,8 +136,11 @@ export class ClientTransactionsComponent implements OnInit, OnDestroy {
 
       this.statementService.getSupplierTransactions(this.key!, this.hash!).subscribe({
         next: (list) => {
-          this.transactions = list.map(t => ({ ...t, date: new Date(t.date as any) })) as any;
-          this.recomputeRunningBalances(this.transactions);
+          this.transactions = (list as any).map((t: any) => ({
+            ...t,
+            date: new Date(t.date as any),
+            runningBalance: t.runningBalance ?? t.balanceAfter ?? t.balance
+          })) as any;
           this.totalRecordsText = String(this.transactions?.length ?? 0);
           this.loading = false;
           this.error = false;
@@ -171,8 +168,11 @@ export class ClientTransactionsComponent implements OnInit, OnDestroy {
 
       this.statementService.getClientTransactions(this.key!, this.hash!).subscribe({
         next: (list) => {
-          this.transactions = list.map(t => ({ ...t, date: new Date(t.date as any) })) as any;
-          this.recomputeRunningBalances(this.transactions);
+          this.transactions = (list as any).map((t: any) => ({
+            ...t,
+            date: new Date(t.date as any),
+            runningBalance: t.runningBalance ?? t.balanceAfter ?? t.balance
+          })) as any;
           this.totalRecordsText = String(this.transactions?.length ?? 0);
           this.loading = false;
           this.error = false;
@@ -187,15 +187,7 @@ export class ClientTransactionsComponent implements OnInit, OnDestroy {
     }
   }
 
-  goBack() {
-    if (this.key && this.hash) {
-      this.router.navigate(['/client-statement'], {
-        queryParams: { key: this.key, hash: this.hash, role: this.role || undefined }
-      });
-    } else {
-      this.router.navigate(['/client-statement'], { queryParams: this.role ? { role: this.role } : undefined });
-    }
-  }
+                                             // ====== CALCULATIONS ======
 
   getTotalPaidIn(): number {
     return this.transactions
@@ -217,81 +209,50 @@ export class ClientTransactionsComponent implements OnInit, OnDestroy {
     return balance;
   }
 
+  // Navigation / User Actions
+  switchLanguage() {
+    const currentLang = this.translationService.getCurrentLanguage();
+    const newLang = currentLang === 'ar' ? 'en' : 'ar';
+    this.translationService.setLanguage(newLang);
+  }
+  goBack() {
+    if (this.key && this.hash) {
+      this.router.navigate(['/client-statement'], {
+        queryParams: { key: this.key, hash: this.hash, role: this.role || undefined }
+      });
+    } else {
+      this.router.navigate(['/client-statement'], { queryParams: this.role ? { role: this.role } : undefined });
+    }
+  }
+                                              // ====== TABLE EVENTS ======
+  /* Reorder columns with RTL fix (kept but not essential to sorting) */
   public dropColumn(event: CdkDragDrop<any[]>) {
-    const isRtl = this.translationService.getCurrentLanguage() === 'ar'; // ✅ NEW
+    const isRtl = this.translationService.getCurrentLanguage() === 'ar';
     if (isRtl) {
       const total = this.columns.length - 1;
-      moveItemInArray(
-        this.columns,
-        total - event.previousIndex,
-        total - event.currentIndex
-      );
+      moveItemInArray(this.columns, total - event.previousIndex, total - event.currentIndex);
     } else {
       moveItemInArray(this.columns, event.previousIndex, event.currentIndex);
     }
   }
-
-  public onCustomSort(event: SortEvent) {
-    if (!event || !event.data) return;
-
-    // Precompute running balance for current order
-    const runningBalanceMap = new Map<AccountTransactionDto, number>();
-    let balance = 0;
-    for (const tx of event.data as AccountTransactionDto[]) {
-      balance += tx.amount;
-      runningBalanceMap.set(tx, balance);
-      (tx as any).runningBalance = balance;
-    }
-
-    const compare = (a: AccountTransactionDto, b: AccountTransactionDto, field: string, order: number) => {
-      const getValue = (t: AccountTransactionDto): any => {
-        switch (field) {
-          case 'date':
-            return new Date((t as any).date).getTime();
-          case 'notes':
-            return (t.notes || t.reference || '') as string;
-          case 'debit':
-            return t.amount < 0 ? Math.abs(t.amount) : 0;
-          case 'credit':
-            return t.amount > 0 ? t.amount : 0;
-          case 'runningBalance':
-            return runningBalanceMap.get(t) ?? 0;
-          default:
-            return '';
-        }
-      };
-      const v1 = getValue(a);
-      const v2 = getValue(b);
-      let result = 0;
-      if (typeof v1 === 'number' && typeof v2 === 'number') {
-        result = v1 - v2;
-      } else {
-        result = String(v1).localeCompare(String(v2));
-      }
-      return order * (result < 0 ? -1 : result > 0 ? 1 : 0);
-    };
-
-    if (event.multiSortMeta && event.multiSortMeta.length) {
-      (event.data as AccountTransactionDto[]).sort((a, b) => {
-        for (const meta of event.multiSortMeta!) {
-          const res = compare(a, b, meta.field as string, meta.order ?? 1);
-          if (res !== 0) return res;
-        }
-        return 0;
-      });
-    } else if (event.field) {
-      (event.data as AccountTransactionDto[]).sort((a, b) => compare(a, b, event.field as string, event.order ?? 1));
+  // Remove custom sort: rely on PrimeNG single sort
+/* Update total count when filtering */
+  public onTableFilter(event: any) 
+  {
+    const filtered: AccountTransactionDto[] | undefined = event?.filteredValue as AccountTransactionDto[] | undefined;
+    // Do NOT recompute running balances on filtered subset, otherwise filter
+    // results will drift because the values being filtered change post-filter.
+    // Only recompute when filters are cleared (no filteredValue provided).
+    if (!filtered) {
+      this.recomputeRunningBalances(this.transactions);
+      this.totalRecordsText = String(this.transactions?.length ?? 0);
+    } else {
+      this.totalRecordsText = String(filtered.length);
     }
   }
-
-  public onTableFilter(event: any) {
-    const list: AccountTransactionDto[] = (event && event.filteredValue) ? event.filteredValue : this.transactions;
-    this.recomputeRunningBalances(list);
-    // Always show total of entire dataset, not just current page
-    this.totalRecordsText = String(this.transactions?.length ?? 0);
-  }
-
-  public dateRangeFilter(value: any, filter: any): boolean {
+/* Date range / exact date filtering */
+  public dateRangeFilter(value: any, filter: any): boolean 
+  {
     if (!filter) return true;
     const toDateOnly = (d: any): Date => {
       const dt = d instanceof Date ? d : new Date(d);
