@@ -14,7 +14,7 @@ import { TranslationService } from '../../../services/translation.service';
         <img src="assets/EGYD-Logo.png" alt="EGYD" class="logo" />
         <span class="title">Dynamic <span class="pro">Pro</span></span>
       </a>
-      <a class="about" href="https://egydynamic.com/about-us/" target="_blank">About us | تعرف علينا</a>
+      <a class="about" href="https://egydynamic.com/" target="_blank">تعرف علينا Dynamic Pro</a>
       <button class="lang" (click)="toggleLanguage()">{{ 'SWITCH_LANGUAGE' | translate }}</button>
     </div>
   </header>
@@ -26,8 +26,8 @@ import { TranslationService } from '../../../services/translation.service';
     .logo { height: 36px; }
     .title { font-weight: 800; color:#111827; letter-spacing: .3px; font-size: 1.1rem; font-family: inherit; }
     .title .pro { color:#6c63ff; }
-    .about { margin-left: auto; color:#6b7280; text-decoration:none; font-weight:600; }
-    .about:hover { color:#111827; text-decoration: underline; }
+    .about { margin-left: auto; color:#6b7280; text-decoration:none; font-weight:700; }
+    .about:hover { color:#6c63ff; text-decoration: underline; }
     .lang { margin-left: 12px; background: transparent; border: 2px solid #6c63ff; color: #6c63ff; font-weight: 600; padding: 6px 10px; border-radius: 8px; cursor: pointer; }
     .lang:hover { background:#6c63ff; color:#fff; }
   `]

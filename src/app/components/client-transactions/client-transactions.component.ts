@@ -35,11 +35,13 @@ export class ClientTransactionsComponent implements OnInit, OnDestroy {
   hash: string | null = null;
   role: string | null = null;
   displayName = '';
+  totalRecordsText = '';
   // Order of columns for dynamic rendering and drag-and-drop
-  public columns: Array<{ key: 'date' | 'notes' | 'amount' | 'runningBalance' }> = [
+  public columns: Array<{ key: 'date' | 'notes' | 'debit' | 'credit' | 'runningBalance' }> = [
     { key: 'date' },
     { key: 'notes' },
-    { key: 'amount' },
+    { key: 'debit' },
+    { key: 'credit' },
     { key: 'runningBalance' }
   ];
   get currentBalance(): number {
@@ -142,6 +144,7 @@ export class ClientTransactionsComponent implements OnInit, OnDestroy {
         next: (list) => {
           this.transactions = list.map(t => ({ ...t, date: new Date(t.date as any) })) as any;
           this.recomputeRunningBalances(this.transactions);
+          this.totalRecordsText = String(this.transactions?.length ?? 0);
           this.loading = false;
           this.error = false;
         },
@@ -170,6 +173,7 @@ export class ClientTransactionsComponent implements OnInit, OnDestroy {
         next: (list) => {
           this.transactions = list.map(t => ({ ...t, date: new Date(t.date as any) })) as any;
           this.recomputeRunningBalances(this.transactions);
+          this.totalRecordsText = String(this.transactions?.length ?? 0);
           this.loading = false;
           this.error = false;
         },
@@ -246,8 +250,10 @@ export class ClientTransactionsComponent implements OnInit, OnDestroy {
             return new Date((t as any).date).getTime();
           case 'notes':
             return (t.notes || t.reference || '') as string;
-          case 'amount':
-            return t.amount;
+          case 'debit':
+            return t.amount < 0 ? Math.abs(t.amount) : 0;
+          case 'credit':
+            return t.amount > 0 ? t.amount : 0;
           case 'runningBalance':
             return runningBalanceMap.get(t) ?? 0;
           default:
@@ -281,6 +287,8 @@ export class ClientTransactionsComponent implements OnInit, OnDestroy {
   public onTableFilter(event: any) {
     const list: AccountTransactionDto[] = (event && event.filteredValue) ? event.filteredValue : this.transactions;
     this.recomputeRunningBalances(list);
+    // Always show total of entire dataset, not just current page
+    this.totalRecordsText = String(this.transactions?.length ?? 0);
   }
 
   public dateRangeFilter(value: any, filter: any): boolean {

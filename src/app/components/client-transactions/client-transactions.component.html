@@ -76,7 +76,7 @@
       </div>
     </div>
 
-    <!-- Summary Cards -->
+    <!-- Summary Cards (desktop/tablet) -->
     <div class="summary-cards">
       <div class="summary-card paid-in">
         <div class="card-content">
@@ -108,6 +108,24 @@
         </div>
         <div class="card-icon">
           <i class="pi pi-bookmark"></i>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mobile balance header (visible on mobile) -->
+    <div class="mobile-balance">
+      <div class="mobile-balance-title">{{ 'CURRENT_BALANCE' | translate }}</div>
+      <div class="mobile-balance-amount">{{ currentBalance | number:'1.2-2' }} {{ statement?.currency || 'EGP' }}</div>
+      <div class="mobile-stats">
+        <div class="stat-item">
+          <span class="dot dot-green"></span>
+          <span class="stat-label">{{ 'PAID_IN' | translate }}</span>
+          <span class="stat-value stat-green">{{ getTotalPaidIn() | number:'1.2-2' }} {{ statement?.currency || 'EGP' }}</span>
+        </div>
+        <div class="stat-item">
+          <span class="dot dot-red"></span>
+          <span class="stat-label">{{ 'PAID_OUT' | translate }}</span>
+          <span class="stat-value stat-red">{{ getTotalPaidOut() | number:'1.2-2' }} {{ statement?.currency || 'EGP' }}</span>
         </div>
       </div>
     </div>
@@ -147,12 +165,20 @@
                 <p-columnFilter field="notes" display="menu" matchMode="contains"></p-columnFilter>
               </th>
 
-              <!-- Amount column -->
-              <th *ngIf="col.key === 'amount'" cdkDrag pSortableColumn="amount">
+              <!-- Debit column -->
+              <th *ngIf="col.key === 'debit'" cdkDrag pSortableColumn="debit">
                 <i class="pi pi-bars mr-2" cdkDragHandle></i>
-                {{ 'DEBIT' | translate }} / {{ 'CREDIT' | translate }}
-                <p-sortIcon field="amount"></p-sortIcon>
-                <p-columnFilter type="numeric" field="amount" display="menu" [currency]="statement?.currency || 'EGP'"></p-columnFilter>
+                {{ 'DEBIT' | translate }}
+                <p-sortIcon field="debit"></p-sortIcon>
+                <p-columnFilter type="numeric" field="debit" display="menu" [currency]="statement?.currency || 'EGP'"></p-columnFilter>
+              </th>
+
+              <!-- Credit column -->
+              <th *ngIf="col.key === 'credit'" cdkDrag pSortableColumn="credit">
+                <i class="pi pi-bars mr-2" cdkDragHandle></i>
+                {{ 'CREDIT' | translate }}
+                <p-sortIcon field="credit"></p-sortIcon>
+                <p-columnFilter type="numeric" field="credit" display="menu" [currency]="statement?.currency || 'EGP'"></p-columnFilter>
               </th>
 
               <!-- Running balance column -->
@@ -170,20 +196,53 @@
             <ng-container *ngFor="let col of columns">
               <td *ngIf="col.key === 'date'">{{ transaction.date | date:'dd MMM yyyy' }}</td>
               <td *ngIf="col.key === 'notes'">{{ transaction.notes || transaction.reference || '-' }}</td>
-              <td *ngIf="col.key === 'amount'">
+              <td *ngIf="col.key === 'debit'">
                 <span *ngIf="transaction.amount < 0" class="debit-amount">
                   {{ (transaction.amount * -1) | number:'1.2-2' }} {{ transaction.currency }}
                 </span>
+                <span *ngIf="transaction.amount >= 0">-</span>
+              </td>
+              <td *ngIf="col.key === 'credit'">
                 <span *ngIf="transaction.amount > 0" class="credit-amount">
                   {{ transaction.amount | number:'1.2-2' }} {{ transaction.currency }}
                 </span>
-                <span *ngIf="transaction.amount === 0">-</span>
+                <span *ngIf="transaction.amount <= 0">-</span>
               </td>
               <td *ngIf="col.key === 'runningBalance'">{{ getRunningBalance(rowIndex) | number:'1.2-2' }} {{ transaction.currency }}</td>
             </ng-container>
           </tr>
         </ng-template>
       </p-table>
+      <div class="table-footer-total">
+        {{ 'TOTAL RECORDS' | translate }}: {{ totalRecordsText }}
+      </div>
+    </div>
+
+    <!-- Mobile Card View -->
+    <div class="mobile-view">
+      <div class="transaction-cards" *ngIf="transactions?.length; else mobileEmpty">
+        <div class="transaction-card" *ngFor="let t of transactions; let i = index">
+          <div class="tx-header">
+            <div class="tx-icon" [ngClass]="{ 'in': t.amount > 0, 'out': t.amount < 0 }">
+              <i class="pi" [ngClass]="t.amount > 0 ? 'pi-arrow-down' : 'pi-arrow-up'"></i>
+            </div>
+            <div class="tx-meta">
+              <div class="tx-date">{{ t.date | date:'MMM d, h:mm a' }}</div>
+              <div class="tx-balance"><span class="label">{{ 'Balance' | translate }} :</span> <span class="val">{{ getRunningBalance(i) | number:'1.2-2' }} {{ t.currency || (statement?.currency || 'EGP') }}</span></div>
+            </div>
+            <div class="tx-amount" [ngClass]="{ 'pos': t.amount > 0, 'neg': t.amount < 0 }">
+              {{ (t.amount < 0 ? (t.amount * -1) : t.amount) | number:'1.2-2' }} {{ t.currency || (statement?.currency || 'EGP') }}
+            </div>
+          </div>
+          <div class="tx-note" *ngIf="t.notes || t.reference">{{ t.notes || t.reference }}</div>
+        </div>
+      </div>
+      <ng-template #mobileEmpty>
+        <div class="mobile-empty-state">
+          <i class="pi pi-inbox empty-icon"></i>
+          <p class="empty-text">{{ 'NO_TRANSACTIONS' | translate }}</p>
+        </div>
+      </ng-template>
     </div>
 
   </div>
@@ -192,7 +251,7 @@
 <!-- Footer with About link -->
 <div class="app-footer">
   <div class="footer-inner">
-    <a class="about" href="https://egydynamic.com/about-us/" target="_blank">About us | تعرف علينا</a>
+    <a class="about" href="https://egydynamic.com/" target="_blank">تعرف علينا Dynamic Pro</a>
   </div>
   
 </div>
