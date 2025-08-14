@@ -30,53 +30,37 @@
                     <div class="account-icon">
                       <i class="pi pi-home"></i>
                     </div>
-                    <div class="account-name">
-                      {{ displayName }}
+                    <div class="header-info">
+                      <div class="company" *ngIf="company">{{ company }}</div>
+                      <div class="phone" *ngIf="phone">{{ phone }}</div>
                     </div>
                   </div>
+
+                  <!-- Customer name centered above balance -->
+                  <div class="customer-name highlight">{{ displayName }}</div>
 
                   <!-- Balance Section -->
                   <div class="balance-section">
                     <div class="balance-label">{{ 'CURRENT_BALANCE' | translate }}</div>
                     <div class="balance-amount">
                       <span class="amount">{{ currentBalance | number:'1.2-2' }}</span>
-                      <span class="currency">{{ statement.currency || 'egp' }}</span>
                     </div>
+                  
                   </div>
 
                   <!-- Message Section -->
                   <div class="message-section">
-                    <p class="welcome-text">{{ 'WELCOME_MESSAGE' | translate }}</p>
+                    <p class="welcome-text">{{ welcomeMessage }}</p>
                     <p class="instruction-text">{{ 'CLICK_TRANSACTION_HISTORY' | translate }}</p>
                   </div>
-            <!-- Details Section -->
-            <div class="details-section fancy-details" *ngIf="company || phone">
-              <div class="detail-card" *ngIf="company">
-                <i class="pi pi-building detail-icon"></i>
-                <div class="detail-text">
-                  <span class="detail-label">{{ 'COMPANY' | translate }}</span>
-                  <span class="detail-value">{{ company }}</span>
-                </div>
-              </div>
-              <div class="detail-card" *ngIf="phone">
-                <i class="pi pi-phone detail-icon"></i>
-                <div class="detail-text">
-                  <span class="detail-label">{{ 'PHONE' | translate }}</span>
-                  <span class="detail-value">{{ phone }}</span>
-                </div>
-              </div>
-                <!-- View Transactions Button inside same flex group -->
-  <button class="transaction-history-btn" (click)="viewFullStatement()">
-    {{ 'VIEW_FULL_STATEMENT' | translate }}
-  </button>
-            </div>
+            
 
 
                   <!-- Action Button -->
                   <div class="action-section">
-                    <!-- <button class="transaction-history-btn" (click)="viewFullStatement()">
+                    <button class="transaction-history-btn" (click)="viewFullStatement()">
                       {{ 'VIEW_FULL_STATEMENT' | translate }}
-                    </button> -->
+                    </button>
                   </div>
                 </div>
 
@@ -106,10 +90,7 @@
                     <i class="pi pi-building"></i>
                     <span>Bank</span>
                   </div>
-                  <div class="payment-item">
-                    <i class="pi pi-wallet"></i>
-                    <span>Wallet</span>
-                  </div>
+
                 </div>
   </div>
 
@@ -120,5 +101,12 @@
       [text]="'NO_DATA_AVAILABLE' | translate"
       styleClass="w-full">
     </p-message>
+  </div>
+</div>
+
+<!-- Footer with About link -->
+<div class="app-footer">
+  <div class="footer-inner">
+    <a class="about" href="https://egydynamic.com/" target="_blank">تعرف علينا Dynamic Pro</a>
   </div>
 </div>

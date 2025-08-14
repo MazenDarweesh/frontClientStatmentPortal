@@ -32,6 +32,8 @@ export class ClientStatementComponent implements OnInit, OnDestroy {
   role: string | null = null;
   displayName = '';
   get currentBalance(): number {
+    const latest = this.getLatestRunningBalance(this.transactions);
+    if (latest != null) return latest;
     if (this.statement && typeof (this.statement as any).balance === 'number') {
       return (this.statement as any).balance as number;
     }
@@ -108,6 +110,59 @@ export class ClientStatementComponent implements OnInit, OnDestroy {
   }
   get description(): string | undefined {
     return (this.statement as any)?.eDescription;
+  }
+
+  get periodStart(): Date | null {
+    if (!this.transactions || this.transactions.length === 0) return null;
+    let minTs = Infinity;
+    for (const t of this.transactions) {
+      const ts = new Date((t as any).date).getTime();
+      if (!isNaN(ts)) minTs = Math.min(minTs, ts);
+    }
+    return isFinite(minTs) ? new Date(minTs) : null;
+  }
+
+  get periodEnd(): Date | null {
+    if (!this.transactions || this.transactions.length === 0) return null;
+    let maxTs = -Infinity;
+    for (const t of this.transactions) {
+      const ts = new Date((t as any).date).getTime();
+      if (!isNaN(ts)) maxTs = Math.max(maxTs, ts);
+    }
+    return isFinite(maxTs) ? new Date(maxTs) : null;
+  }
+
+  get welcomeMessage(): string {
+    const ps = this.periodStart;
+    const pe = this.periodEnd;
+    const lang = this.translationService.getCurrentLanguage?.() ?? 'ar';
+    if (ps && pe) {
+      const start = new Date(ps);
+      const end = new Date(pe);
+      const format = (d: Date) => d.toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+      if (lang === 'ar') {
+        return `مرحباً، هذا رصيدك للفترة ${format(start)} إلى ${format(end)}.`;
+      }
+      return `Hello, this is your balance for the period from ${format(start)} to ${format(end)}.`;
+    }
+    // Fallback to static translation if dates not available yet
+    return this.translationService.translate('WELCOME_MESSAGE' as any);
+  }
+
+  private getLatestRunningBalance(list: AccountTransactionDto[]): number | null {
+    if (!list || list.length === 0) return null;
+    let latestItem: AccountTransactionDto | null = null;
+    let latestTs = -Infinity;
+    for (const t of list) {
+      const ts = new Date((t as any).date).getTime();
+      if (isNaN(ts)) continue;
+      if (ts > latestTs) {
+        latestTs = ts;
+        latestItem = t;
+      }
+    }
+    const rb = (latestItem as any)?.runningBalance;
+    return typeof rb === 'number' ? rb : null;
   }
 
   loadStatement() {

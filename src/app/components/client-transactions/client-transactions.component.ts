@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef, ElementRef, ViewChild, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -25,9 +25,10 @@ type AnyAccountStatementDto = ClientAccountStatementDto | SupplierAccountStateme
   imports: [CommonModule, FormsModule, TableModule, DatePickerModule, ButtonModule, ProgressSpinnerModule, MessageModule, TranslatePipe, AppHeaderComponent, DragDropModule]
 })
 
-export class ClientTransactionsComponent implements OnInit, OnDestroy {
+export class ClientTransactionsComponent implements OnInit, OnDestroy, AfterViewInit {
   statement: AnyAccountStatementDto | null = null;
   transactions: AccountTransactionDto[] = [];
+  visibleTransactions: AccountTransactionDto[] = [];
   loading = true;
   error = false;
   errorMessage = '';
@@ -36,6 +37,15 @@ export class ClientTransactionsComponent implements OnInit, OnDestroy {
   role: string | null = null;
   displayName = '';
   totalRecordsText = '';
+  mobileShowTable = false;
+  private pageSize = 10;
+  private pageIndex = 0;
+  canLoadMore = false;
+  private intersectionObserver: IntersectionObserver | null = null;
+  @ViewChild('infiniteScrollSentinel') sentinelRef?: ElementRef<HTMLDivElement>;
+  mobileFilterOpen = false;
+  selectedMobileColumn: 'date' | 'notes' | 'debit' | 'credit' | 'runningBalance' = 'date';
+  mobileFilter: { text?: string; dateStart?: string; dateEnd?: string; numMin?: number | null; numMax?: number | null } = {};
   // Order of columns for dynamic rendering
   public columns: Array<{ key: 'date' | 'notes' | 'debit' | 'credit' | 'runningBalance' }> = [
     { key: 'date' },
@@ -45,6 +55,8 @@ export class ClientTransactionsComponent implements OnInit, OnDestroy {
     { key: 'runningBalance' }
   ];
   get currentBalance(): number {
+    const latest = this.getLatestRunningBalance(this.transactions);
+    if (latest != null) return latest;
     if (this.statement && typeof (this.statement as any).balance === 'number') {
       return (this.statement as any).balance as number;
     }
@@ -53,6 +65,22 @@ export class ClientTransactionsComponent implements OnInit, OnDestroy {
   private languageSubscription: Subscription | null = null;
   public get isRtl() {
     return this.translationService.getCurrentLanguage() === 'ar';
+  }
+
+  private getLatestRunningBalance(list: AccountTransactionDto[]): number | null {
+    if (!list || list.length === 0) return null;
+    let latestItem: AccountTransactionDto | null = null;
+    let latestTs = -Infinity;
+    for (const t of list) {
+      const ts = new Date((t as any).date).getTime();
+      if (isNaN(ts)) continue;
+      if (ts > latestTs) {
+        latestTs = ts;
+        latestItem = t;
+      }
+    }
+    const rb = (latestItem as any)?.runningBalance;
+    return typeof rb === 'number' ? rb : null;
   }
 
   // No recompute here: runningBalance comes from backend
@@ -91,6 +119,10 @@ export class ClientTransactionsComponent implements OnInit, OnDestroy {
     });
   }
 
+  ngAfterViewInit(): void {
+    this.setupIntersectionObserver();
+  }
+
   ngOnDestroy(): void {
     if (this.languageSubscription) {
       this.languageSubscription.unsubscribe();
@@ -115,6 +147,26 @@ export class ClientTransactionsComponent implements OnInit, OnDestroy {
   }
   get description(): string | undefined {
     return (this.statement as any)?.eDescription;
+  }
+
+  get periodStart(): Date | null {
+    if (!this.transactions || this.transactions.length === 0) return null;
+    let minTs = Infinity;
+    for (const t of this.transactions) {
+      const ts = new Date((t as any).date).getTime();
+      if (!isNaN(ts)) minTs = Math.min(minTs, ts);
+    }
+    return isFinite(minTs) ? new Date(minTs) : null;
+  }
+
+  get periodEnd(): Date | null {
+    if (!this.transactions || this.transactions.length === 0) return null;
+    let maxTs = -Infinity;
+    for (const t of this.transactions) {
+      const ts = new Date((t as any).date).getTime();
+      if (!isNaN(ts)) maxTs = Math.max(maxTs, ts);
+    }
+    return isFinite(maxTs) ? new Date(maxTs) : null;
   }
 //  API Layer
   loadData() {
@@ -144,6 +196,7 @@ export class ClientTransactionsComponent implements OnInit, OnDestroy {
           this.totalRecordsText = String(this.transactions?.length ?? 0);
           this.loading = false;
           this.error = false;
+          this.resetMobilePagination();
         },
         error: (err: any) => {
           console.error('Error loading transactions:', err);
@@ -176,6 +229,7 @@ export class ClientTransactionsComponent implements OnInit, OnDestroy {
           this.totalRecordsText = String(this.transactions?.length ?? 0);
           this.loading = false;
           this.error = false;
+          this.resetMobilePagination();
         },
         error: (err: any) => {
           console.error('Error loading transactions:', err);
@@ -210,6 +264,107 @@ export class ClientTransactionsComponent implements OnInit, OnDestroy {
   }
 
   // Navigation / User Actions
+  toggleMobileView() {
+    this.mobileShowTable = !this.mobileShowTable;
+    if (!this.mobileShowTable) {
+      setTimeout(() => this.setupIntersectionObserver());
+    }
+  }
+
+  openMobileFilter() {
+    this.mobileFilterOpen = true;
+  }
+  closeMobileFilter() {
+    this.mobileFilterOpen = false;
+  }
+  resetMobileFilter() {
+    this.mobileFilter = {};
+    this.applyMobileFilter();
+  }
+  applyMobileFilter() {
+    const filtered = this.filterTransactionsForMobile(this.transactions);
+    this.pageIndex = 0;
+    this.visibleTransactions = [];
+    this.canLoadMore = filtered.length > 0;
+    this.loadMoreFrom(filtered);
+    setTimeout(() => this.setupIntersectionObserver());
+    this.mobileFilterOpen = false;
+  }
+
+  private filterTransactionsForMobile(source: AccountTransactionDto[]): AccountTransactionDto[] {
+    if (!this.selectedMobileColumn) return source;
+    if (this.selectedMobileColumn === 'notes') {
+      const q = (this.mobileFilter.text || '').toLowerCase();
+      if (!q) return source;
+      return source.filter(t => ((t as any)?.notes || (t as any)?.reference || '').toLowerCase().includes(q));
+    }
+    if (this.selectedMobileColumn === 'date') {
+      const start = this.mobileFilter.dateStart ? new Date(this.mobileFilter.dateStart) : null;
+      const end = this.mobileFilter.dateEnd ? new Date(this.mobileFilter.dateEnd) : null;
+      if (!start && !end) return source;
+      const toDateOnly = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+      const s = start ? toDateOnly(start) : null;
+      const e = end ? toDateOnly(end) : null;
+      return source.filter(t => {
+        const d = toDateOnly(new Date((t as any).date));
+        if (s && e) return d >= s && d <= e;
+        if (s) return d.getTime() === s.getTime();
+        if (e) return d <= e;
+        return true;
+      });
+    }
+    // Numeric filters for debit/credit/runningBalance
+    const min = this.mobileFilter.numMin ?? null;
+    const max = this.mobileFilter.numMax ?? null;
+    if (min == null && max == null) return source;
+    return source.filter(t => {
+      const value = this.selectedMobileColumn === 'debit' ? (t as any).debit
+        : this.selectedMobileColumn === 'credit' ? (t as any).credit
+        : (t as any).runningBalance;
+      if (typeof value !== 'number') return false;
+      if (min != null && value < min) return false;
+      if (max != null && value > max) return false;
+      return true;
+    });
+  }
+
+  private resetMobilePagination() {
+    // apply current filter if open
+    const base = this.filterTransactionsForMobile(this.transactions);
+    this.pageIndex = 0;
+    this.visibleTransactions = [];
+    this.canLoadMore = base.length > 0;
+    this.loadMoreFrom(base);
+    // Reconnect observer after content change
+    setTimeout(() => this.setupIntersectionObserver());
+  }
+
+  private setupIntersectionObserver() {
+    if (!this.sentinelRef) return;
+    if (this.intersectionObserver) {
+      this.intersectionObserver.disconnect();
+    }
+    this.intersectionObserver = new IntersectionObserver(entries => {
+      const entry = entries[0];
+      if (entry && entry.isIntersecting) {
+        const base = this.filterTransactionsForMobile(this.transactions);
+        this.loadMoreFrom(base);
+      }
+    }, { root: null, rootMargin: '200px', threshold: 0 });
+    this.intersectionObserver.observe(this.sentinelRef.nativeElement);
+  }
+
+  private loadMoreFrom(source: AccountTransactionDto[]) {
+    if (!source || this.pageIndex * this.pageSize >= source.length) {
+      this.canLoadMore = false;
+      return;
+    }
+    const start = this.pageIndex * this.pageSize;
+    const end = Math.min(start + this.pageSize, source.length);
+    this.visibleTransactions = this.visibleTransactions.concat(source.slice(start, end));
+    this.pageIndex += 1;
+    this.canLoadMore = end < source.length;
+  }
   switchLanguage() {
     const currentLang = this.translationService.getCurrentLanguage();
     const newLang = currentLang === 'ar' ? 'en' : 'ar';
