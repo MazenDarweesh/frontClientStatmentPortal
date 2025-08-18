@@ -1,7 +1,8 @@
-import { Component } from '@angular/core';
+import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { TranslatePipe } from '../../../pipes/translate.pipe';
 import { TranslationService } from '../../../services/translation.service';
+import { LoggingService } from '../../../services/logging.service';
 
 @Component({
   selector: 'app-header',
@@ -10,11 +11,11 @@ import { TranslationService } from '../../../services/translation.service';
   template: `
   <header class="app-header">
     <div class="inner">
-      <a href="https://egydynamic.com/" target="_blank" class="brand">
+      <a [href]="dynamicProUrl" target="_blank" class="brand" (click)="logDynamicProClick()">
         <img src="assets/EGYD-Logo.png" alt="EGYD" class="logo" />
         <span class="title">Dynamic <span class="pro">Pro</span></span>
       </a>
-      <a class="about" href="https://egydynamic.com/" target="_blank">تعرف علينا Dynamic Pro</a>
+      <a class="about" [href]="dynamicProUrl" target="_blank" (click)="logDynamicProClick()">تعرف علينا Dynamic Pro</a>
       <button class="lang" (click)="toggleLanguage()">{{ 'SWITCH_LANGUAGE' | translate }}</button>
     </div>
   </header>
@@ -33,10 +34,22 @@ import { TranslationService } from '../../../services/translation.service';
   `]
 })
 export class AppHeaderComponent {
-  constructor(private translationService: TranslationService) {}
+  @Input() dynamicProUrl: string | undefined;
+  @Input() companyKey: string | undefined;
+  @Input() accountName: string | undefined;
+  @Input() accountType: string | undefined;
+  constructor(private translationService: TranslationService, private loggingService: LoggingService) {}
   toggleLanguage() {
     const current = this.translationService.getCurrentLanguage();
     this.translationService.setLanguage(current === 'ar' ? 'en' : 'ar');
+  }
+  logDynamicProClick() {
+    this.loggingService.logEvent({
+      eventType: 'Button_Click',
+      companyKey: this.companyKey,
+      accountName: this.accountName,
+      accountType: this.accountType
+    });
   }
 }
 

@@ -1,5 +1,6 @@
-import { Component } from '@angular/core';
+import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { LoggingService } from '../../../services/logging.service';
 
 @Component({
   selector: 'app-footer',
@@ -7,7 +8,10 @@ import { CommonModule } from '@angular/common';
   imports: [CommonModule],
   template: `
   <footer class="app-footer">
-    <div class="inner">© {{year}} EgyDynamic</div>
+    <div class="inner">
+      <a class="about" [href]="dynamicProUrl" target="_blank" (click)="logDynamicProClick()">تعرف علينا Dynamic Pro</a>
+      © {{year}} EgyDynamic
+    </div>
   </footer>
   `,
   styles: [`
@@ -15,6 +19,21 @@ import { CommonModule } from '@angular/common';
     .inner { text-align:center; font-size: 12px; }
   `]
 })
-export class AppFooterComponent { year = new Date().getFullYear(); }
+export class AppFooterComponent {
+  year = new Date().getFullYear();
+  @Input() dynamicProUrl: string | undefined;
+  @Input() companyKey: string | undefined;
+  @Input() accountName: string | undefined;
+  @Input() accountType: string | undefined;
+  constructor(private loggingService: LoggingService) {}
+  logDynamicProClick() {
+    this.loggingService.logEvent({
+      eventType: 'Button_Click',
+      companyKey: this.companyKey,
+      accountName: this.accountName,
+      accountType: this.accountType
+    });
+  }
+}
 
 

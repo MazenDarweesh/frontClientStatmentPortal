@@ -5,25 +5,25 @@ import { CardModule } from 'primeng/card';
 import { ButtonModule } from 'primeng/button';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { MessageModule } from 'primeng/message';
-import { StatementService, ClientAccountStatementDto, SupplierAccountStatementDto, AccountTransactionDto } from '../../services/statement.service';
+import { StatementService } from '../../services/statement.service';
 import { TranslatePipe } from '../../pipes/translate.pipe';
 import { TranslationService } from '../../services/translation.service';
 import { Subscription } from 'rxjs';
 import { AppHeaderComponent } from '../layout/app-header/app-header.component';
-
-type AnyAccountStatementDto = ClientAccountStatementDto | SupplierAccountStatementDto;
+import { PersonalDetailsDto, StatementEntryWithDateDto } from '../../services/statement.service';
+import { LoggingService } from '../../services/logging.service';
+import { AppFooterComponent } from '../layout/app-footer/app-footer.component';
 
 @Component({
   selector: 'app-client-statement',
   standalone: true,
-  imports: [CommonModule, CardModule, ButtonModule, ProgressSpinnerModule, MessageModule, TranslatePipe, AppHeaderComponent],
+  imports: [CommonModule, CardModule, ButtonModule, ProgressSpinnerModule, MessageModule, TranslatePipe, AppHeaderComponent, AppFooterComponent],
   templateUrl: './client-statement.component.html',
   styleUrls: ['./client-statement.component.css']
 })
-
 export class ClientStatementComponent implements OnInit, OnDestroy {
-  statement: AnyAccountStatementDto | null = null;
-  transactions: AccountTransactionDto[] = [];
+  statement: PersonalDetailsDto | null = null;
+  transactions: StatementEntryWithDateDto[] = [];
   loading = true;
   error = false;
   errorMessage = '';
@@ -32,24 +32,34 @@ export class ClientStatementComponent implements OnInit, OnDestroy {
   role: string | null = null;
   displayName = '';
   get currentBalance(): number {
-    const latest = this.getLatestRunningBalance(this.transactions);
-    if (latest != null) return latest;
-    if (this.statement && typeof (this.statement as any).balance === 'number') {
-      return (this.statement as any).balance as number;
+    if (!this.transactions || this.transactions.length === 0) {
+      return 0;
     }
-    return this.transactions.reduce((sum, t) => sum + (t?.amount ?? 0), 0);
+  
+    // pick the transaction with the latest date
+    const latestTx = [...this.transactions].sort(
+      (a, b) => new Date(b.eDate).getTime() - new Date(a.eDate).getTime()
+    )[0];
+  
+    return latestTx?.balance ?? 0;
+  }
+  get dynamicProUrl(): string | undefined {
+    return this.statement?.dynamicProUrl;
   }
   private languageSubscription: Subscription | null = null;
+  private hasLoggedPageLink = false;
 
   constructor(
-    private route: ActivatedRoute, 
-    private router: Router, 
-    private statementService: StatementService, 
+    private route: ActivatedRoute,
+    private router: Router,
+    private statementService: StatementService,
     private translationService: TranslationService,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private loggingService: LoggingService
   ) {}
 
-  ngOnInit(): void {
+  ngOnInit(): void 
+  {
     // Subscribe to language changes
     this.languageSubscription = this.translationService.currentLanguage$.subscribe(() => {
       this.cdr.detectChanges();
@@ -58,34 +68,34 @@ export class ClientStatementComponent implements OnInit, OnDestroy {
     this.route.queryParams.subscribe(params => {
       this.key = params['key'];
       this.hash = params['hash'];
-      this.role = params['role'] || (this.route.snapshot.data && (this.route.snapshot.data as any)['role']) || null;
-      
+      this.role = params['role'] || (this.route.snapshot.data as any)?.['role'] || null;
+
       if (!this.key || !this.hash) {
-        // Fallback demo content when deep-link params are missing
+        // Fallback demo content
         this.statement = {
-          clientName: 'Demo Client',
-          accountNumber: 'EG1234567890',
-          balance: 15234.75
-        } as ClientAccountStatementDto;
-        this.displayName = 'Demo Client';
+          name: 'Demo Client',
+          phone: '01012345678',
+          address: 'Cairo, Egypt',
+          company: 'Demo Co.',
+          dynamicProUrl: 'https://egydynamic.com/'
+        };
+        this.displayName = this.statement.name;
         this.transactions = [
-          { type: 'Deposit', amount: 5000, currency: 'EGP', date: '2024-12-01', notes: 'Initial', status: 'Completed' },
-          { type: 'Purchase', amount: -1200.5, currency: 'EGP', date: '2024-12-05', notes: 'Order #A102', status: 'Completed' },
-          { type: 'Refund', amount: 300, currency: 'EGP', date: '2024-12-08', notes: 'Order #A102', status: 'Completed' }
-        ] as AccountTransactionDto[];
+          { eDate: new Date('2024-12-01'), eDescription: 'Initial Deposit', debit: 0, credit: 5000, balance: 5000 },
+          { eDate: new Date('2024-12-05'), eDescription: 'Purchase A102', debit: 1200.5, credit: 0, balance: 3799.5 },
+          { eDate: new Date('2024-12-08'), eDescription: 'Refund A102', debit: 0, credit: 300, balance: 4099.5 }
+        ];
         this.loading = false;
         this.error = false;
         return;
       }
-      
+
       this.loadStatement();
     });
   }
 
   ngOnDestroy(): void {
-    if (this.languageSubscription) {
-      this.languageSubscription.unsubscribe();
-    }
+    this.languageSubscription?.unsubscribe();
   }
 
   switchLanguage() {
@@ -94,41 +104,29 @@ export class ClientStatementComponent implements OnInit, OnDestroy {
     this.translationService.setLanguage(newLang);
   }
 
-  private computeDisplayName(dto: AnyAccountStatementDto | null): string {
-    if (!dto) return '';
-    return (dto as any).clientName || (dto as any).supplierName || (dto as any).name || '';
+  private computeDisplayName(dto: PersonalDetailsDto | null): string {
+    return dto?.name ?? '';
   }
 
   get phone(): string | undefined {
-    return (this.statement as any)?.phone;
+    return this.statement?.phone;
   }
-  get address(): string | null | undefined {
-    return (this.statement as any)?.address;
+  get address(): string | undefined {
+    return this.statement?.address;
   }
   get company(): string | undefined {
-    return (this.statement as any)?.company;
-  }
-  get description(): string | undefined {
-    return (this.statement as any)?.eDescription;
+    return this.statement?.company;
   }
 
   get periodStart(): Date | null {
-    if (!this.transactions || this.transactions.length === 0) return null;
-    let minTs = Infinity;
-    for (const t of this.transactions) {
-      const ts = new Date((t as any).date).getTime();
-      if (!isNaN(ts)) minTs = Math.min(minTs, ts);
-    }
+    if (!this.transactions.length) return null;
+    const minTs = Math.min(...this.transactions.map(t => t.eDate.getTime()));
     return isFinite(minTs) ? new Date(minTs) : null;
   }
 
   get periodEnd(): Date | null {
-    if (!this.transactions || this.transactions.length === 0) return null;
-    let maxTs = -Infinity;
-    for (const t of this.transactions) {
-      const ts = new Date((t as any).date).getTime();
-      if (!isNaN(ts)) maxTs = Math.max(maxTs, ts);
-    }
+    if (!this.transactions.length) return null;
+    const maxTs = Math.max(...this.transactions.map(t => t.eDate.getTime()));
     return isFinite(maxTs) ? new Date(maxTs) : null;
   }
 
@@ -137,70 +135,60 @@ export class ClientStatementComponent implements OnInit, OnDestroy {
     const pe = this.periodEnd;
     const lang = this.translationService.getCurrentLanguage?.() ?? 'ar';
     if (ps && pe) {
-      const start = new Date(ps);
-      const end = new Date(pe);
-      const format = (d: Date) => d.toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
-      if (lang === 'ar') {
-        return `مرحباً، هذا رصيدك للفترة ${format(start)} إلى ${format(end)}.`;
-      }
-      return `Hello, this is your balance for the period from ${format(start)} to ${format(end)}.`;
+      const format = (d: Date) =>
+        d.toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-GB', {
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric'
+        });
+      return lang === 'ar'
+        ? `مرحباً، هذا رصيدك للفترة ${format(ps)} إلى ${format(pe)}.`
+        : `Hello, this is your balance for the period from ${format(ps)} to ${format(pe)}.`;
     }
-    // Fallback to static translation if dates not available yet
     return this.translationService.translate('WELCOME_MESSAGE' as any);
-  }
-
-  private getLatestRunningBalance(list: AccountTransactionDto[]): number | null {
-    if (!list || list.length === 0) return null;
-    let latestItem: AccountTransactionDto | null = null;
-    let latestTs = -Infinity;
-    for (const t of list) {
-      const ts = new Date((t as any).date).getTime();
-      if (isNaN(ts)) continue;
-      if (ts > latestTs) {
-        latestTs = ts;
-        latestItem = t;
-      }
-    }
-    const rb = (latestItem as any)?.runningBalance;
-    return typeof rb === 'number' ? rb : null;
   }
 
   loadStatement() {
     const isSupplier = this.role === 'S';
 
-    if (isSupplier) {
-      this.statementService.getSupplierStatement(this.key!, this.hash!).subscribe({
-        next: (dto) => {
-          this.statement = dto as AnyAccountStatementDto;
-          this.displayName = this.computeDisplayName(this.statement);
-          this.loading = false;
-        },
-        error: () => { this.loading = false; this.error = true; this.errorMessage = 'Network error'; }
-      });
+    const statement$ = isSupplier
+      ? this.statementService.getSupplierStatement(this.key!, this.hash!)
+      : this.statementService.getClientStatement(this.key!, this.hash!);
 
-      this.statementService.getSupplierTransactions(this.key!, this.hash!).subscribe({
-        next: (list) => {
-          this.transactions = list;
-        },
-        error: () => { this.error = true; this.errorMessage = 'Network error'; }
-      });
-    } else {
-      this.statementService.getClientStatement(this.key!, this.hash!).subscribe({
-        next: (dto) => {
-          this.statement = dto as AnyAccountStatementDto;
-          this.displayName = this.computeDisplayName(this.statement);
-          this.loading = false;
-        },
-        error: () => { this.loading = false; this.error = true; this.errorMessage = 'Network error'; }
-      });
+    const transactions$ = isSupplier
+      ? this.statementService.getSupplierTransactions(this.key!, this.hash!)
+      : this.statementService.getClientTransactions(this.key!, this.hash!);
 
-      this.statementService.getClientTransactions(this.key!, this.hash!).subscribe({
-        next: (list) => {
-          this.transactions = list;
-        },
-        error: () => { this.error = true; this.errorMessage = 'Network error'; }
-      });
-    }
+    statement$.subscribe({
+      next: dto => {
+        this.statement = dto;
+        this.displayName = this.computeDisplayName(dto);
+        this.loading = false;
+        // Log only the first time data is loaded
+        if (!this.hasLoggedPageLink) {
+          this.loggingService.logEvent({
+            eventType: 'Page_Link',
+            companyKey: this.key || undefined,
+            accountName: dto.name,
+            accountType: this.role || undefined
+          });
+          this.hasLoggedPageLink = true;
+        }
+      },
+      error: () => {
+        this.loading = false;
+        this.error = true;
+        this.errorMessage = 'Network error';
+      }
+    });
+
+    transactions$.subscribe({
+      next: list => (this.transactions = list),
+      error: () => {
+        this.error = true;
+        this.errorMessage = 'Network error';
+      }
+    });
   }
 
   viewFullStatement(): void {
@@ -208,31 +196,23 @@ export class ClientStatementComponent implements OnInit, OnDestroy {
     const hash = this.route.snapshot.queryParamMap.get('hash');
     const role = this.route.snapshot.queryParamMap.get('role');
     if (key && hash) {
-      this.router.navigate(['/client-transactions'], { 
-        queryParams: { key, hash, role: role || this.role || undefined } 
+      this.router.navigate(['/client-transactions'], {
+        queryParams: { key, hash, role: role || this.role || undefined }
       });
     }
   }
 
   refreshData(): void {
     if (!this.statement) return;
-    const key = this.route.snapshot.queryParamMap.get('key');
-    const hash = this.route.snapshot.queryParamMap.get('hash');
-    if (!key || !hash) return;
-    this.loading = true;
-    const isSupplier = this.role === 'S';
-    if (isSupplier) {
-      this.statementService.getSupplierStatement(key, hash).subscribe({
-        next: (dto) => { this.statement = dto; this.displayName = this.computeDisplayName(dto as AnyAccountStatementDto); this.loading = false; },
-        error: () => { this.loading = false; this.error = true; this.errorMessage = 'Network error'; }
-      });
-    } else {
-      this.statementService.getClientStatement(key, hash).subscribe({
-        next: (dto) => { this.statement = dto; this.displayName = this.computeDisplayName(dto as AnyAccountStatementDto); this.loading = false; },
-        error: () => { this.loading = false; this.error = true; this.errorMessage = 'Network error'; }
-      });
-    }
+    this.loadStatement();
+  }
+
+  logDynamicProClick(eventType: string) {
+    this.loggingService.logEvent({
+      eventType,
+      companyKey: this.key || undefined,
+      accountName: this.statement?.name,
+      accountType: this.role || undefined
+    });
   }
 }
-
-

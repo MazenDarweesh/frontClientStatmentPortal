@@ -1,4 +1,4 @@
-<app-header></app-header>
+<app-header [dynamicProUrl]="dynamicProUrl" [companyKey]="key || undefined" [accountName]="statement?.name" [accountType]="role || undefined"></app-header>
 
 <div class="statement-container">
   <!-- Loading State -->
@@ -105,8 +105,4 @@
 </div>
 
 <!-- Footer with About link -->
-<div class="app-footer">
-  <div class="footer-inner">
-    <a class="about" href="https://egydynamic.com/" target="_blank">تعرف علينا Dynamic Pro</a>
-  </div>
-</div>
+<app-footer [dynamicProUrl]="dynamicProUrl" [companyKey]="key || undefined" [accountName]="statement?.name" [accountType]="role || undefined"></app-footer>
