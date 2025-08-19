@@ -605,16 +605,22 @@
 .mobile-filter-panel .btn.outline { background:#fff; border:1px solid #6c63ff; color:#6c63ff; }
 .mobile-filter-panel .btn.primary { background:#6c63ff; border:1px solid #6c63ff; color:#fff; }
 
-/* Top header (home icon + company + phone + toggle) */
-.top-header { display:flex; align-items:center; gap:10px; margin-bottom: 8px; }
+.top-header { display:flex; align-items:center; justify-content: space-between; gap:10px; margin-bottom: 8px; background: transparent; border: none; padding: 0; }
 .top-header .account-icon { width:36px; height:36px; background:#f1f5f9; border-radius:8px; display:flex; align-items:center; justify-content:center; }
 .top-header .account-icon i { color:#64748b; font-size:1.1rem; }
 .top-header .header-info { display:flex; flex-direction:column; }
 .top-header .company { color:#111827; font-weight:700; }
 .top-header .phone { color:#6b7280; font-size:0.9rem; }
-.top-header .mobile-toggle, .top-header .mobile-filter { margin-left:auto; background:#fff; border:1px solid #e5e7eb; border-radius:8px; padding:6px 8px; cursor:pointer; color:#6b7280; }
+.top-header .mobile-filter { margin-left:auto; background:#fff; border:1px solid #e5e7eb; border-radius:8px; padding:6px 8px; cursor:pointer; color:#6b7280; }
+.mobile-toggle { background:#fff; border:1px solid #e5e7eb; border-radius:8px; padding:6px 8px; cursor:pointer; color:#6b7280; }
 .top-header .mobile-toggle:hover, .top-header .mobile-filter:hover { background:#f9fafb; }
 .top-header .mobile-filter { margin-left:6px; }
+
+
+.mazen {
+  display: flex;
+    margin: 15px;
+}
 
 /* Infinite scroll sentinel */
 .infinite-sentinel { height: 1px; }

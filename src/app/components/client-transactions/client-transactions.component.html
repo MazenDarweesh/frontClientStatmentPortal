@@ -22,7 +22,7 @@
   </div>
 
   <!-- Error State -->
-  <div *ngIf="error" class="error-container">
+  <div *ngIf="!loading && error" class="error-container">
     <p-message 
       severity="error" 
       [text]="errorMessage"
@@ -34,17 +34,21 @@
   <div *ngIf="!loading && !error" class="transactions-content">
     <!-- Header Section (home icon + company + phone) -->
     <div class="top-header">
-      <div class="account-icon"><i class="pi pi-home"></i></div>
-      <div class="header-info">
-        <div class="company" *ngIf="company">{{ company }}</div>
-        <div class="phone" *ngIf="phone">{{ phone }}</div>
+      <div class="mazen">
+        <div class="account-icon"><i class="pi pi-home"></i></div>
+        <div class="header-info">
+          <div class="company" *ngIf="company">{{ company }}</div>
+          <div class="phone" *ngIf="phone">{{ phone }}</div>
+        </div>
       </div>
-      <button class="mobile-toggle" (click)="toggleMobileView()" title="Toggle view" [attr.aria-label]="translationService.getCurrentLanguage() === 'ar' ? 'تبديل العرض' : 'Toggle view'">
-        <i class="pi" [ngClass]="mobileShowTable ? 'pi-list' : 'pi-table'"></i>
-      </button>
-      <button class="mobile-filter" (click)="openMobileFilter()" title="Filter" [attr.aria-label]="translationService.getCurrentLanguage() === 'ar' ? 'فلترة' : 'Filter'" *ngIf="!mobileShowTable">
-        <i class="pi pi-filter"></i>
-      </button>
+      <div>
+        <button class="mobile-toggle" (click)="toggleMobileView()" title="Toggle view" [attr.aria-label]="translationService.getCurrentLanguage() === 'ar' ? 'تبديل العرض' : 'Toggle view'">
+          <i class="pi" [ngClass]="mobileShowTable ? 'pi-list' : 'pi-table'"></i>
+        </button>
+        <button class="mobile-filter" (click)="openMobileFilter()" title="Filter" [attr.aria-label]="translationService.getCurrentLanguage() === 'ar' ? 'فلترة' : 'Filter'" *ngIf="!mobileShowTable">
+          <i class="pi pi-filter"></i>
+        </button>
+      </div>
     </div>
 
     <div class="transactions-header">
@@ -175,6 +179,9 @@
 
     <!-- Mobile Card View -->
     <div class="mobile-view" *ngIf="!mobileShowTable">
+      <div class="table-footer-total">
+        {{ 'TOTAL RECORDS' | translate }}: {{ totalRecordsText }}
+      </div>
       <div class="transaction-cards" *ngIf="visibleTransactions?.length; else mobileEmpty">
         <div class="transaction-card" *ngFor="let t of visibleTransactions; let i = index">
           <div class="tx-header">
@@ -253,6 +260,6 @@
 
   </div>
 </div>
-
 <!-- Footer with About link -->
 <app-footer [dynamicProUrl]="dynamicProUrl" [companyKey]="key || undefined" [accountName]="statement?.name" [accountType]="role || undefined"></app-footer>
+

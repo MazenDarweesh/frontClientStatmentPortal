@@ -13,9 +13,10 @@ import { StatementService, PersonalDetailsDto, StatementEntryWithDateDto } from 
 import { TranslatePipe } from '../../pipes/translate.pipe';
 import { TranslationService } from '../../services/translation.service';
 import { AppHeaderComponent } from '../layout/app-header/app-header.component';
-import { Subscription } from 'rxjs';
+import { Subscription, forkJoin } from 'rxjs';
 import { LoggingService } from '../../services/logging.service';
 import { AppFooterComponent } from '../layout/app-footer/app-footer.component';
+import { HttpErrorResponse } from '@angular/common/http';
 
 @Component({
   selector: 'app-client-transactions',
@@ -69,6 +70,7 @@ export class ClientTransactionsComponent implements OnInit, OnDestroy, AfterView
   }
   
   private languageSubscription: Subscription | null = null;
+  private currentLoadId = 0; // correlate async responses to avoid showing stale errors
   
   public get isRtl() {
     return this.translationService.getCurrentLanguage() === 'ar';
@@ -96,22 +98,15 @@ export class ClientTransactionsComponent implements OnInit, OnDestroy, AfterView
       this.hash = params['hash'];
       this.role = params['role'] || (this.route.snapshot.data && (this.route.snapshot.data as any)['role']) || null;
       
+      // If params not yet available (initial emission), don't flip to error; keep loading spinner.
       if (!this.key || !this.hash) {
-        this.error = true;
-        this.errorMessage = 'Missing required parameters';
-        this.loading = false;
         return;
       }
       
       this.loadData();
     });
 
-    this.loggingService.logEvent({
-      eventType: 'Page_Link',
-      companyKey: this.key || undefined,
-      accountName: this.statement?.name,
-      accountType: this.role || undefined
-    });
+  // Page_Link logging moved to StatementService (first fetch only)
   }
 
   ngAfterViewInit(): void {
@@ -158,7 +153,12 @@ export class ClientTransactionsComponent implements OnInit, OnDestroy, AfterView
 
   // API Layer
   loadData() {
+    if (!this.key || !this.hash) return; // safety
     const isSupplier = this.role === 'S';
+    const loadId = ++this.currentLoadId; // capture id for this invocation
+    this.loading = true;
+    this.error = false;
+    this.errorMessage = '';
 
     const statement$ = isSupplier
       ? this.statementService.getSupplierStatement(this.key!, this.hash!)
@@ -168,31 +168,28 @@ export class ClientTransactionsComponent implements OnInit, OnDestroy, AfterView
       ? this.statementService.getSupplierTransactions(this.key!, this.hash!)
       : this.statementService.getClientTransactions(this.key!, this.hash!);
 
-    statement$.subscribe({
-      next: (dto) => {
+    forkJoin([statement$, transactions$]).subscribe({
+      next: ([dto, list]) => {
+        // Ignore if a newer load started
+        if (loadId !== this.currentLoadId) return;
         this.statement = dto;
         this.displayName = this.computeDisplayName(dto);
-      },
-      error: (err: any) => {
-        console.error('Error loading statement:', err);
-        this.error = true;
-        this.errorMessage = err?.message || 'Failed to load statement';
-        this.loading = false;
-      }
-    });
-
-    transactions$.subscribe({
-      next: (list) => {
         this.transactions = list;
         this.totalRecordsText = String(this.transactions?.length ?? 0);
-        this.loading = false;
-        this.error = false;
         this.resetMobilePagination();
+        this.loading = false;
       },
       error: (err: any) => {
-        console.error('Error loading transactions:', err);
+         // Ignore if a newer load started
+        if (loadId !== this.currentLoadId) return;
+        // Suppress transient/aborted network (status 0) errors; keep spinner (silent retry optional)
+        if (err instanceof HttpErrorResponse && err.status === 0) {
+          // Leave loading true to allow subsequent automatic or manual retry; do not show error banner
+          return;
+        }
+        console.error('Error loading data:', err);
         this.error = true;
-        this.errorMessage = err?.message || 'Failed to load transactions';
+        this.errorMessage = err?.message || 'Network error';
         this.loading = false;
       }
     });
