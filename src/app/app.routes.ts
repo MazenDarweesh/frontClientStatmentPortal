@@ -1,28 +1,22 @@
-import { Routes } from '@angular/router';
+import { NgModule } from '@angular/core';
+import { RouterModule, Routes } from '@angular/router';
+import { HomeComponent } from './components/home/home.component';
 
 export const routes: Routes = [
   {
     path: 'view-statement',
-    loadComponent: () => import('./components/statement-router/statement-router.component').then(m => m.StatementRouterComponent)
+    loadComponent: () => import('./components/statement/statement.component').then(m => m.StatementComponent)
   },
   {
-    path: 'client-statement',
-    loadComponent: () => import('./components/client-statement/client-statement.component').then(m => m.ClientStatementComponent)
+    path: 'view-transactions',
+    loadComponent: () => import('./components/transactions/transactions.component').then(m => m.TransactionsComponent)
   },
-  {
-    path: 'supplier-statement',
-    data: { role: 'S' },
-    loadComponent: () => import('./components/client-statement/client-statement.component').then(m => m.ClientStatementComponent)
-  },
-  {
-    path: 'client-transactions',
-    loadComponent: () => import('./components/client-transactions/client-transactions.component').then(m => m.ClientTransactionsComponent)
-  },
-  {
-    path: 'supplier-transactions',
-    data: { role: 'S' },
-    loadComponent: () => import('./components/client-transactions/client-transactions.component').then(m => m.ClientTransactionsComponent)
-  },
-  { path: '', pathMatch: 'full', redirectTo: 'view-statement' },
-  { path: '**', redirectTo: 'view-statement' }
+  { path: '', pathMatch: 'full', component: HomeComponent },
+  { path: '**', component: HomeComponent }
 ];
+
+@NgModule({
+  imports: [RouterModule.forRoot(routes)],
+  exports: [RouterModule]
+})
+export class AppRoutingModule {}

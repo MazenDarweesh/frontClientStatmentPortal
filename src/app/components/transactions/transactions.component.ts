@@ -19,14 +19,14 @@ import { AppFooterComponent } from '../layout/app-footer/app-footer.component';
 import { HttpErrorResponse } from '@angular/common/http';
 
 @Component({
-  selector: 'app-client-transactions',
-  templateUrl: './client-transactions.component.html',
-  styleUrls: ['./client-transactions.component.css'],
+  selector: 'app-transactions',
+  templateUrl: './transactions.component.html',
+  styleUrls: ['./transactions.component.css'],
   standalone: true,
   imports: [CommonModule, FormsModule, TableModule, DatePickerModule, ButtonModule, ProgressSpinnerModule, MessageModule, TranslatePipe, AppHeaderComponent, DragDropModule, AppFooterComponent]
 })
 
-export class ClientTransactionsComponent implements OnInit, OnDestroy, AfterViewInit {
+export class TransactionsComponent implements OnInit, OnDestroy, AfterViewInit {
   statement: PersonalDetailsDto | null = null;
   transactions: StatementEntryWithDateDto[] = [];
   visibleTransactions: StatementEntryWithDateDto[] = [];
@@ -100,6 +100,7 @@ export class ClientTransactionsComponent implements OnInit, OnDestroy, AfterView
       
       // If params not yet available (initial emission), don't flip to error; keep loading spinner.
       if (!this.key || !this.hash) {
+        this.router.navigate(['/']);
         return;
       }
       
@@ -154,11 +155,19 @@ export class ClientTransactionsComponent implements OnInit, OnDestroy, AfterView
   // API Layer
   loadData() {
     if (!this.key || !this.hash) return; // safety
-    const isSupplier = this.role === 'S';
+
+    if (this.role !== 'C' && this.role !== 'S') 
+    {
+  this.router.navigate(['/']);
+  return;
+    }
+
     const loadId = ++this.currentLoadId; // capture id for this invocation
     this.loading = true;
     this.error = false;
     this.errorMessage = '';
+
+    const isSupplier = this.role === 'S';
 
     const statement$ = isSupplier
       ? this.statementService.getSupplierStatement(this.key!, this.hash!)
@@ -187,10 +196,8 @@ export class ClientTransactionsComponent implements OnInit, OnDestroy, AfterView
           // Leave loading true to allow subsequent automatic or manual retry; do not show error banner
           return;
         }
-        console.error('Error loading data:', err);
-        this.error = true;
-        this.errorMessage = err?.message || 'Network error';
-        this.loading = false;
+  // Wrong key/hash or other backend error -> redirect home
+  this.router.navigate(['/']);
       }
     });
   }
@@ -327,11 +334,11 @@ export class ClientTransactionsComponent implements OnInit, OnDestroy, AfterView
   
   goBack() {
     if (this.key && this.hash) {
-      this.router.navigate(['/client-statement'], {
+      this.router.navigate(['/view-statement'], {
         queryParams: { key: this.key, hash: this.hash, role: this.role || undefined }
       });
     } else {
-      this.router.navigate(['/client-statement'], { queryParams: this.role ? { role: this.role } : undefined });
+      this.router.navigate(['/view-statement'], { queryParams: this.role ? { role: this.role } : undefined });
     }
   }
   
