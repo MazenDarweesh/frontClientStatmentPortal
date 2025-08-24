@@ -1,12 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
+import { VisitorEvent } from '../Models/VisitorEvent';
 
-export interface VisitorEvent {
-  eventType?: string;
-  companyKey?: string;
-  accountName?: string;
-  accountType?: string;
-}
 
 @Injectable({ providedIn: 'root' })
 export class LoggingService {

@@ -11,9 +11,10 @@ import { TranslatePipe } from '../../pipes/translate.pipe';
 import { TranslationService } from '../../services/translation.service';
 import { Subscription, forkJoin } from 'rxjs';
 import { AppHeaderComponent } from '../layout/app-header/app-header.component';
-import { PersonalDetailsDto, StatementEntryWithDateDto } from '../../services/statement.service';
 import { LoggingService } from '../../services/logging.service';
 import { AppFooterComponent } from '../layout/app-footer/app-footer.component';
+import { PersonalDetailsDto } from '../../Models/PersonalDetailsDto';
+import { StatementEntryWithDateDto } from '../../Models/StatementEntryWithDateDto';
 
 @Component({
   selector: 'app-statement',

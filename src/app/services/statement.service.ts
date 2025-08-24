@@ -3,39 +3,11 @@ import { HttpClient } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
 import { LoggingService } from './logging.service';
 import { environment } from '../../environments/environment';
+import { PersonalDetailsDto } from '../Models/PersonalDetailsDto';
+import { StatementEntryWithDateDto } from '../Models/StatementEntryWithDateDto';
+import { ApiResponse } from '../Models/ApiResponse';
+import { StatementEntryDto } from '../Models/StatementEntryDto';
 
-// Models
-export interface PersonalDetailsDto {
-  name: string;
-  phone: string;
-  address: string;
-  company: string;
-  dynamicProUrl: string;
-}
-
-export interface StatementEntryDto {
-  eDate: string;
-  eDescription: string;
-  debit: number;
-  credit: number;
-  balance: number;
-}
-
-// Interface for transactions with Date objects (for UI use)
-export interface StatementEntryWithDateDto {
-  eDate: Date;
-  eDescription: string;
-  debit: number;
-  credit: number;
-  balance: number;
-}
-
-export interface ApiResponse<T> {
-  success: boolean;
-  data: T;
-  message?: string;
-  errorCode?: string;
-}
 
 @Injectable({ providedIn: 'root' })
 export class StatementService {

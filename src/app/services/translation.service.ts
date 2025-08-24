@@ -1,44 +1,10 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
+import { TranslationKeys } from '../Models/TranslationKeys';
 
 export type Language = 'ar' | 'en';
 
-export interface TranslationKeys {
-  LOADING_DATA: string;
-  ACCOUNT_STATEMENT: string;
-  CURRENT_BALANCE: string;
-  VIEW_FULL_STATEMENT: string;
-  LAST_TRANSACTION: string;
-  ACCOUNT_NUMBER: string;
-  ACCOUNT_STATUS: string;
-  TRANSACTIONS_HISTORY: string;
-  TRANSACTIONS: string;
-  DATE: string;
-  TYPE: string;
-  REFERENCE: string;
-  AMOUNT: string;
-  STATUS: string;
-  NO_TRANSACTIONS: string;
-  WELCOME_MESSAGE: string;
-  SWITCH_LANGUAGE: string;
-  BACK_TO_STATEMENT: string;
-  NO_DATA_AVAILABLE: string;
-  SHOWING: string;
-  TO: string;
-  OF: string;
-  ENTRIES: string;
-  CLICK_TRANSACTION_HISTORY: string;
-  PAID_IN: string;
-  PAID_OUT: string;
-  NOTE: string;
-  DEBIT: string;
-  CREDIT: string;
-  RUNNING_BALANCE: string;
-  DESCRIPTION: string;
-  PHONE: string;
-  ADDRESS: string;
-  COMPANY: string;
-}
+
 
 const translations: Record<Language, TranslationKeys> = {
   ar: {

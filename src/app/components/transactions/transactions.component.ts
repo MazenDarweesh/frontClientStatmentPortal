@@ -9,7 +9,6 @@ import { DatePickerModule } from 'primeng/datepicker';
 import { ButtonModule } from 'primeng/button';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { MessageModule } from 'primeng/message';
-import { StatementService, PersonalDetailsDto, StatementEntryWithDateDto } from '../../services/statement.service';
 import { TranslatePipe } from '../../pipes/translate.pipe';
 import { TranslationService } from '../../services/translation.service';
 import { AppHeaderComponent } from '../layout/app-header/app-header.component';
@@ -17,6 +16,9 @@ import { Subscription, forkJoin } from 'rxjs';
 import { LoggingService } from '../../services/logging.service';
 import { AppFooterComponent } from '../layout/app-footer/app-footer.component';
 import { HttpErrorResponse } from '@angular/common/http';
+import { PersonalDetailsDto } from '../../Models/PersonalDetailsDto';
+import { StatementEntryWithDateDto } from '../../Models/StatementEntryWithDateDto';
+import { StatementService } from '../../services/statement.service';
 
 @Component({
   selector: 'app-transactions',
