@@ -4,8 +4,6 @@ import { TranslationKeys } from '../Models/TranslationKeys';
 
 export type Language = 'ar' | 'en';
 
-
-
 const translations: Record<Language, TranslationKeys> = {
   ar: {
     LOADING_DATA: 'جاري تحميل البيانات...',
